@@ -21,7 +21,7 @@
       background: rgba(15, 23, 42, 0.8);
       border-radius: 24px;
       padding: 24px 28px;
-      max-width: 460px;
+      max-width: 520px;
       width: 100%;
       box-shadow: 0 20px 50px rgba(15, 23, 42, 0.7);
       border: 1px solid rgba(148, 163, 184, 0.3);
@@ -69,10 +69,26 @@
       box-shadow: none;
       margin-left: 8px;
     }
+    .social-row {
+      margin-top: 10px;
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    button.google {
+      background: #ffffff;
+      color: #111827;
+      box-shadow: 0 6px 20px rgba(15, 23, 42, 0.4);
+    }
+    button.facebook {
+      background: #1877f2;
+      color: #f9fafb;
+    }
     #status {
       font-size: 0.85rem;
       color: #a5b4fc;
       margin-top: 8px;
+      white-space: pre-wrap;
     }
     .section {
       margin-top: 18px;
@@ -103,6 +119,9 @@
     a:hover {
       text-decoration: underline;
     }
+    code {
+      font-size: 0.8rem;
+    }
   </style>
 </head>
 <body>
@@ -113,7 +132,13 @@
     <div>
       <button id="loginBtn">Log in / Sign up</button>
       <button id="logoutBtn" class="secondary" style="display:none;">Log out</button>
-      <div id="status">Checking login status…</div>
+
+      <div class="social-row">
+        <button id="googleBtn" class="google">Continue with Google</button>
+        <button id="facebookBtn" class="facebook">Continue with Facebook</button>
+      </div>
+
+      <div id="status">[init] Checking login status…</div>
     </div>
 
     <!-- PUBLIC AREA -->
@@ -135,33 +160,56 @@
     </div>
 
     <div style="margin-top:10px; font-size:0.75rem; color:#6b7280;">
-      Problems logging in? Make sure your Cognito callback URL is set to <code>https://linglear.com/</code>.
+      Problems logging in? Check the console (<code>F12 → Console</code>).  
+      Cognito callback must match <code>REDIRECT_URI</code> exactly.
     </div>
   </div>
 
   <script>
-    // ====== YOUR COGNITO CONFIG ======
+    // ================== CONFIG ==================
     const COGNITO_DOMAIN = "https://us-east-1rdnegqer1.auth.us-east-1.amazoncognito.com"; // no trailing slash
     const CLIENT_ID = "5s39n3sffohs0nhf6i534f7d9h";
-    const REDIRECT_URI = "https://linglear.com/";
+
+    // IMPORTANT: this MUST match the callback URL in Cognito EXACTLY.
+    // If Cognito has "https://linglear.com/" instead, add the slash here too.
+    const REDIRECT_URI = "https://linglear.com";
+
     const SCOPES = "openid email profile";
 
+    // ================== ELEMENTS ==================
     const loginBtn = document.getElementById("loginBtn");
     const logoutBtn = document.getElementById("logoutBtn");
+    const googleBtn = document.getElementById("googleBtn");
+    const facebookBtn = document.getElementById("facebookBtn");
     const statusEl = document.getElementById("status");
     const publicSection = document.getElementById("publicSection");
     const memberSection = document.getElementById("memberSection");
     const welcomeText = document.getElementById("welcomeText");
 
-    // ====== HELPERS ======
-    function buildLoginUrl() {
+    function log(msg, data) {
+      const prefix = "[LINGLEAR AUTH]";
+      if (data !== undefined) {
+        console.log(prefix, msg, data);
+      } else {
+        console.log(prefix, msg);
+      }
+      statusEl.textContent = `${prefix} ${msg}`;
+    }
+
+    // ================== URL BUILDERS ==================
+    function buildLoginUrl(identityProvider) {
       const params = new URLSearchParams({
         client_id: CLIENT_ID,
-        response_type: "token",   // implicit flow: tokens in URL hash
+        response_type: "token", // implicit: tokens in URL hash
         scope: SCOPES,
         redirect_uri: REDIRECT_URI,
       });
-      return `${COGNITO_DOMAIN}/oauth2/authorize?${params.toString()}`;
+      if (identityProvider) {
+        params.set("identity_provider", identityProvider);
+      }
+      const url = `${COGNITO_DOMAIN}/oauth2/authorize?${params.toString()}`;
+      log(`Built login URL${identityProvider ? " (" + identityProvider + ")" : ""}: ${url}`);
+      return url;
     }
 
     function buildLogoutUrl() {
@@ -169,33 +217,56 @@
         client_id: CLIENT_ID,
         logout_uri: REDIRECT_URI,
       });
-      return `${COGNITO_DOMAIN}/logout?${params.toString()}`;
+      const url = `${COGNITO_DOMAIN}/logout?${params.toString()}`;
+      log(`Built logout URL: ${url}`);
+      return url;
     }
 
-    function parseHashFragment() {
+    // ================== HASH PARSING ==================
+    function parseHashTokens() {
       if (!location.hash || location.hash.length <= 1) return null;
-      const hash = location.hash.substring(1); // drop '#'
+      const hash = location.hash.substring(1);
       const params = new URLSearchParams(hash);
       const idToken = params.get("id_token");
       const accessToken = params.get("access_token");
       const expiresIn = params.get("expires_in");
       if (!idToken && !accessToken) return null;
-      return {
+      const tokens = {
         idToken,
         accessToken,
         expiresIn: expiresIn ? parseInt(expiresIn, 10) : null,
       };
+      log("Parsed tokens from hash.", tokens);
+      return tokens;
     }
 
+    function parseHashError() {
+      if (!location.hash || location.hash.length <= 1) return null;
+      const hash = location.hash.substring(1);
+      const params = new URLSearchParams(hash);
+      const error = params.get("error");
+      const description = params.get("error_description");
+      if (!error) return null;
+      const err = {
+        error,
+        description: description ? decodeURIComponent(description) : null,
+      };
+      console.error("[LINGLEAR AUTH] Error from Cognito:", err);
+      return err;
+    }
+
+    // ================== JWT & SESSION ==================
     function decodeJwtPayload(token) {
       if (!token) return null;
       try {
         const payload = token.split(".")[1];
         const normalized = payload.replace(/-/g, "+").replace(/_/g, "/");
         const json = atob(normalized);
-        return JSON.parse(json);
+        const parsed = JSON.parse(json);
+        log("Decoded JWT payload.", parsed);
+        return parsed;
       } catch (e) {
-        console.warn("Failed to decode JWT:", e);
+        console.warn("[LINGLEAR AUTH] Failed to decode JWT:", e);
         return null;
       }
     }
@@ -215,31 +286,47 @@
         expiresAt: exp,
       };
       localStorage.setItem("linglear_session", JSON.stringify(session));
+      log("Saved session to localStorage.", session);
       return session;
     }
 
     function loadSession() {
       const raw = localStorage.getItem("linglear_session");
-      if (!raw) return null;
+      if (!raw) {
+        log("No existing session in localStorage.");
+        return null;
+      }
       try {
         const session = JSON.parse(raw);
-        if (!session || !session.idToken) return null;
+        if (!session || !session.idToken) {
+          log("Session in localStorage is invalid (no idToken).");
+          return null;
+        }
         const now = Math.floor(Date.now() / 1000);
         if (session.expiresAt && now > session.expiresAt) {
-          // token expired
+          log("Existing session is expired. Clearing.");
           localStorage.removeItem("linglear_session");
           return null;
         }
+        log("Loaded existing session from localStorage.", session);
         return session;
       } catch (e) {
-        console.warn("Failed to parse session:", e);
+        console.warn("[LINGLEAR AUTH] Failed to parse session from localStorage:", e);
         localStorage.removeItem("linglear_session");
         return null;
       }
     }
 
-    function applyLoggedOutUI() {
-      statusEl.textContent = "You are not logged in.";
+    function clearSession() {
+      localStorage.removeItem("linglear_session");
+      log("Cleared session from localStorage.");
+    }
+
+    // ================== UI HELPERS ==================
+    function applyLoggedOutUI(extra) {
+      let msg = "You are not logged in.";
+      if (extra) msg += " " + extra;
+      log(msg);
       memberSection.style.display = "none";
       publicSection.style.display = "block";
       loginBtn.style.display = "inline-block";
@@ -252,7 +339,7 @@
         (payload && (payload.name || payload.email || payload["cognito:username"])) ||
         "Linglear member";
 
-      statusEl.textContent = "You are logged in.";
+      log(`User is logged in as: ${name}`);
       welcomeText.textContent = `Welcome, ${name}!`;
       memberSection.style.display = "block";
       publicSection.style.display = "block";
@@ -260,35 +347,79 @@
       logoutBtn.style.display = "inline-block";
     }
 
-    // ====== BUTTON HANDLERS ======
+    // ================== BUTTON HANDLERS ==================
     loginBtn.addEventListener("click", () => {
-      window.location.href = buildLoginUrl();
+      const url = buildLoginUrl();
+      log("Redirecting to Cognito Hosted UI (default).");
+      window.location.href = url;
+    });
+
+    googleBtn.addEventListener("click", () => {
+      const url = buildLoginUrl("Google"); // provider name must match Cognito IdP
+      log("Redirecting to Cognito Hosted UI (Google).");
+      window.location.href = url;
+    });
+
+    facebookBtn.addEventListener("click", () => {
+      const url = buildLoginUrl("Facebook"); // provider name must match Cognito IdP
+      log("Redirecting to Cognito Hosted UI (Facebook).");
+      window.location.href = url;
     });
 
     logoutBtn.addEventListener("click", () => {
-      localStorage.removeItem("linglear_session");
-      window.location.href = buildLogoutUrl();
+      clearSession();
+      const url = buildLogoutUrl();
+      log("Redirecting to Cognito logout.");
+      window.location.href = url;
     });
 
-    // ====== INITIAL LOAD: HANDLE CALLBACK & SESSION ======
+    // ================== INIT FLOW ==================
     (function init() {
-      // 1. If Cognito just redirected us with tokens in the hash, process them.
-      const tokensFromHash = parseHashFragment();
-      if (tokensFromHash) {
-        const session = saveSession(tokensFromHash);
-        // Clean up the URL so the hash isn't visible
-        history.replaceState({}, document.title, REDIRECT_URI);
-        applyLoggedInUI(session);
+      console.log("[LINGLEAR AUTH] --- INIT START ---");
+      console.log("[LINGLEAR AUTH] location.href =", window.location.href);
+      console.log("[LINGLEAR AUTH] location.hash =", window.location.hash);
+      console.log("[LINGLEAR AUTH] COGNITO_DOMAIN =", COGNITO_DOMAIN);
+      console.log("[LINGLEAR AUTH] CLIENT_ID =", CLIENT_ID);
+      console.log("[LINGLEAR AUTH] REDIRECT_URI =", REDIRECT_URI);
+
+      // 1) Handle Cognito errors in hash
+      const hashError = parseHashError();
+      if (hashError) {
+        applyLoggedOutUI(
+          `Login error: ${hashError.error}${
+            hashError.description ? " – " + hashError.description : ""
+          }`
+        );
         return;
       }
 
-      // 2. Else, see if we already have a valid session in localStorage
+      // 2) Handle successful login tokens in hash
+      const tokensFromHash = parseHashTokens();
+      if (tokensFromHash) {
+        const session = saveSession(tokensFromHash);
+        // Clean up the URL so the hash isn't visible
+        if (window.location.href.startsWith(REDIRECT_URI)) {
+          log("Replacing history state to remove token hash from URL.");
+          history.replaceState({}, document.title, REDIRECT_URI);
+        } else {
+          log(
+            "Not replacing history state because href doesn't start with REDIRECT_URI. href=" +
+              window.location.href
+          );
+        }
+        applyLoggedInUI(session);
+        console.log("[LINGLEAR AUTH] --- INIT END (from tokens) ---");
+        return;
+      }
+
+      // 3) Check existing session
       const existingSession = loadSession();
       if (existingSession) {
         applyLoggedInUI(existingSession);
       } else {
         applyLoggedOutUI();
       }
+      console.log("[LINGLEAR AUTH] --- INIT END ---");
     })();
   </script>
 </body>
