@@ -166,15 +166,15 @@
   </div>
 
   <script>
-    // ================== CONFIG ==================
-    const COGNITO_DOMAIN = "https://us-east-1rdnegqer1.auth.us-east-1.amazoncognito.com"; // no trailing slash
-    const CLIENT_ID = "5s39n3sffohs0nhf6i534f7d9h";
+    // ================== CONFIG (FROM AWS) ==================
+    const COGNITO_DOMAIN = "https://us-east-1rdnegqer1.auth.us-east-1.amazoncognito.com"; // from UserPool.Domain
+    const CLIENT_ID = "5s39n3sffohs0nhf6i534f7d9h"; // from UserPoolClient.ClientId
 
-    // IMPORTANT: this MUST match the callback URL in Cognito EXACTLY.
-    // If Cognito has "https://linglear.com/" instead, add the slash here too.
+    // MUST match one of CallbackURLs exactly: "https://linglear.com/"
     const REDIRECT_URI = "https://linglear.com/";
 
-    const SCOPES = "openid email profile";
+    // Must be subset of AllowedOAuthScopes: ["email","openid","phone"]
+    const SCOPES = "openid email";
 
     // ================== ELEMENTS ==================
     const loginBtn = document.getElementById("loginBtn");
@@ -354,14 +354,15 @@
       window.location.href = url;
     });
 
+    // These will only work *after* you configure Google/Facebook IdPs in Cognito:
     googleBtn.addEventListener("click", () => {
-      const url = buildLoginUrl("Google"); // provider name must match Cognito IdP
+      const url = buildLoginUrl("Google"); // provider name must match IdP name in Cognito
       log("Redirecting to Cognito Hosted UI (Google).");
       window.location.href = url;
     });
 
     facebookBtn.addEventListener("click", () => {
-      const url = buildLoginUrl("Facebook"); // provider name must match Cognito IdP
+      const url = buildLoginUrl("Facebook"); // provider name must match IdP name in Cognito
       log("Redirecting to Cognito Hosted UI (Facebook).");
       window.location.href = url;
     });
@@ -381,8 +382,9 @@
       console.log("[LINGLEAR AUTH] COGNITO_DOMAIN =", COGNITO_DOMAIN);
       console.log("[LINGLEAR AUTH] CLIENT_ID =", CLIENT_ID);
       console.log("[LINGLEAR AUTH] REDIRECT_URI =", REDIRECT_URI);
+      console.log("[LINGLEAR AUTH] SCOPES =", SCOPES);
 
-      // 1) Handle Cognito errors in hash
+      // 1) Handle Cognito errors in hash (if Cognito returns error *to* linglear.com)
       const hashError = parseHashError();
       if (hashError) {
         applyLoggedOutUI(
@@ -390,6 +392,7 @@
             hashError.description ? " – " + hashError.description : ""
           }`
         );
+        console.log("[LINGLEAR AUTH] --- INIT END (error) ---");
         return;
       }
 
