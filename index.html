@@ -1,375 +1,591 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <title>Linglear – Login Demo</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <style>
-    :root {
-      --bg: #020617;
-      --card: rgba(15,23,42,0.92);
-      --accent: #38bdf8;
-      --accent-soft: rgba(56,189,248,0.15);
-      --border: rgba(148,163,184,0.35);
-      --text-main: #e5e7eb;
-      --text-muted: #9ca3af;
-    }
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
-    body {
-      min-height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: radial-gradient(circle at top left,#0f172a,#020617 48%,#020617);
-      font-family: system-ui,-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",sans-serif;
-      color: var(--text-main);
-    }
-    .card {
-      width: min(480px, 100% - 32px);
-      padding: 26px 26px 22px;
-      border-radius: 28px;
-      background:
-        radial-gradient(circle at top left, rgba(56,189,248,0.22), transparent 55%),
-        radial-gradient(circle at bottom right, rgba(79,70,229,0.20), transparent 55%),
-        var(--card);
-      box-shadow:
-        0 24px 80px rgba(15,23,42,0.88),
-        0 0 0 1px rgba(15,23,42,0.9);
-      border: 1px solid rgba(148,163,184,0.35);
-      backdrop-filter: blur(22px);
-    }
-    h1 {
-      font-size: 1.6rem;
-      letter-spacing: 0.03em;
-      margin-bottom: 4px;
-    }
-    .subtitle {
-      font-size: 0.9rem;
-      color: var(--text-muted);
-      margin-bottom: 18px;
-    }
-    .button-row {
-      display: flex;
-      gap: 10px;
-      align-items: center;
-      margin-bottom: 8px;
-    }
-    .btn-primary {
-      padding: 8px 18px;
-      border-radius: 999px;
-      border: none;
-      cursor: pointer;
-      font-size: 0.95rem;
-      font-weight: 500;
-      color: #0b1220;
-      background: radial-gradient(circle at top left,#38bdf8,#0ea5e9);
-      box-shadow:
-        0 0 0 1px rgba(56,189,248,0.65),
-        0 18px 45px rgba(56,189,248,0.40);
-      transition: transform 0.12s ease, box-shadow 0.12s ease, filter 0.12s ease;
-    }
-    .btn-primary:hover {
-      transform: translateY(-1px);
-      filter: brightness(1.04);
-      box-shadow:
-        0 0 0 1px rgba(56,189,248,0.9),
-        0 26px 60px rgba(56,189,248,0.6);
-    }
-    .btn-primary:active {
-      transform: translateY(0);
-      box-shadow:
-        0 0 0 1px rgba(56,189,248,0.75),
-        0 16px 40px rgba(15,23,42,0.85);
-    }
-    .btn-ghost {
-      padding: 6px 14px;
-      border-radius: 999px;
-      border: 1px solid rgba(148,163,184,0.45);
-      background: rgba(15,23,42,0.75);
-      color: var(--text-muted);
-      font-size: 0.85rem;
-      cursor: pointer;
-      transition: border-color 0.12s ease, background 0.12s ease, color 0.12s ease;
-    }
-    .btn-ghost:hover {
-      border-color: rgba(148,163,184,0.8);
-      background: rgba(15,23,42,0.95);
-      color: #e5e7eb;
-    }
-    .status-line {
-      margin-top: 4px;
-      font-size: 0.78rem;
-      color: var(--text-muted);
-      min-height: 1.1rem;
-    }
-    .status-line.error {
-      color: #f97373;
-    }
-    .section {
-      margin-top: 18px;
-      padding: 14px 16px;
-      border-radius: 16px;
-      background: rgba(15,23,42,0.85);
-      border: 1px solid rgba(30,64,175,0.8);
-    }
-    .section h2 {
-      margin: 0 0 6px;
-      font-size: 1.05rem;
-    }
-    .tag {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      padding: 2px 8px;
-      margin-left: 6px;
-      border-radius: 999px;
-      border: 1px solid rgba(96,165,250,0.35);
-      background: rgba(37,99,235,0.25);
-      color: #bfdbfe;
-      font-size: 0.65rem;
-      text-transform: uppercase;
-      letter-spacing: 0.06em;
-    }
-    code {
-      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-      font-size: 0.7rem;
-    }
-    .footer-text {
-      margin-top: 10px;
-      font-size: 0.75rem;
-      color: #6b7280;
-    }
-    .footer-text a {
-      color: #93c5fd;
-      text-decoration: none;
-    }
-    .footer-text a:hover {
-      text-decoration: underline;
-    }
-  </style>
-</head>
-<body>
-  <main class="card">
-    <h1>Linglear</h1>
-    <p class="subtitle">
-      Basic Cognito login demo. A small “members-only” box appears only when you’re logged in.
-    </p>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Linglear – Login Demo</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-    <div class="button-row">
-      <button id="loginBtn" class="btn-primary">Log in / Sign up</button>
-      <button id="logoutBtn" class="btn-ghost" style="display:none;">Log out</button>
-    </div>
-    <div id="statusLine" class="status-line">Checking login status…</div>
-
-    <div id="authDebug" class="status-line" style="margin-top:4px;"></div>
-
-    <!-- PUBLIC AREA -->
-    <div class="section" id="publicSection">
-      <h2>Public area</h2>
-      <p>Everyone can see this, even if they’re not logged in.</p>
-    </div>
-
-    <!-- MEMBER-ONLY AREA -->
-    <div class="section" id="memberSection" style="display:none;">
-      <h2>
-        Member area
-        <span class="tag">auth required</span>
-      </h2>
-      <p id="welcomeText">Welcome!</p>
-      <p style="font-size:0.85rem; color:#9ca3af;">
-        This is where you’ll eventually put your dashboard, library, SRS, or whatever you only want logged-in users to see.
-      </p>
-    </div>
-
-    <div class="footer-text">
-      Problems logging in? Make sure your Cognito callback URL is set to
-      <code>https://linglear.com/</code>.
-    </div>
-  </main>
-
-  <script>
-    // ====== BASIC CONFIG ======
-    const COGNITO_DOMAIN = "https://linglear-auth-1.auth.us-east-1.amazoncognito.com";
-    const CLIENT_ID = "6lsk8r1jbfs2g0619pb6a01t9q";
-    const REDIRECT_URI = "https://linglear.com/";
-    const SCOPES = "openid email";
-
-    const loginBtn = document.getElementById("loginBtn");
-    const logoutBtn = document.getElementById("logoutBtn");
-    const statusLine = document.getElementById("statusLine");
-    const authDebug = document.getElementById("authDebug");
-    const memberSection = document.getElementById("memberSection");
-    const publicSection = document.getElementById("publicSection");
-    const welcomeText = document.getElementById("welcomeText");
-
-    function buildLoginUrl() {
-      const params = new URLSearchParams({
-        client_id: CLIENT_ID,
-        response_type: "token",
-        redirect_uri: REDIRECT_URI,
-        scope: SCOPES
-      });
-      return `${COGNITO_DOMAIN}/login?${params.toString()}`;
-    }
-
-    function buildLogoutUrl() {
-      const params = new URLSearchParams({
-        client_id: CLIENT_ID,
-        logout_uri: REDIRECT_URI
-      });
-      return `${COGNITO_DOMAIN}/logout?${params.toString()}`;
-    }
-
-    function decodeJwtPayload(token) {
-      try {
-        const parts = token.split(".");
-        if (parts.length !== 3) return null;
-        const base64 = parts[1].replace(/-/g, "+").replace(/_/g, "/");
-        const padded = base64 + "=".repeat((4 - base64.length % 4) % 4);
-        const json = atob(padded);
-        return JSON.parse(json);
-      } catch (e) {
-        console.error("[LINGLEAR AUTH] Failed to decode JWT payload", e);
-        return null;
+    <style>
+      :root {
+        --bg: #020617;
+        --card-bg: rgba(15, 23, 42, 0.92);
+        --card-border: rgba(56, 189, 248, 0.35);
+        --accent: #38bdf8;
+        --accent-soft: rgba(56, 189, 248, 0.2);
+        --accent-strong: rgba(56, 189, 248, 0.9);
+        --text-main: #e5e7eb;
+        --text-muted: #9ca3af;
+        --text-soft: #6b7280;
+        --danger: #f97373;
       }
-    }
 
-    function saveSession(idToken, accessToken, expiresIn) {
-      const payload = decodeJwtPayload(idToken) || {};
-      const now = Math.floor(Date.now() / 1000);
-      const expiresAt = now + (expiresIn || 3600);
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
 
-      const session = {
-        idToken,
-        accessToken,
-        expiresAt,
-        email: payload.email || null
-      };
-      localStorage.setItem("linglear_auth_session", JSON.stringify(session));
-      return session;
-    }
+      html,
+      body {
+        height: 100%;
+        width: 100%;
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text",
+          "Segoe UI", sans-serif;
+        background: radial-gradient(circle at top, #0f172a 0, #020617 50%, #020617 100%);
+        color: var(--text-main);
+        overflow: hidden;
+      }
 
-    function loadSession() {
-      try {
-        const raw = localStorage.getItem("linglear_auth_session");
-        if (!raw) return null;
-        const session = JSON.parse(raw);
-        const now = Math.floor(Date.now() / 1000);
-        if (!session.expiresAt || session.expiresAt <= now) {
-          localStorage.removeItem("linglear_auth_session");
+      body {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 24px;
+      }
+
+      .shell {
+        position: relative;
+        width: 100%;
+        max-width: 720px;
+        max-height: 520px;
+      }
+
+      .card {
+        position: relative;
+        margin: 0 auto;
+        border-radius: 28px;
+        background: radial-gradient(circle at top left, #0b1220 0, #020617 70%)
+          border-box;
+        padding: 36px 40px 28px 40px;
+        border: 1px solid var(--card-border);
+        box-shadow: 0 28px 80px rgba(15, 23, 42, 0.95);
+        backdrop-filter: blur(26px) saturate(180%);
+        -webkit-backdrop-filter: blur(26px) saturate(180%);
+        overflow: hidden;
+      }
+
+      .card::before {
+        content: "";
+        position: absolute;
+        inset: -120px;
+        background: radial-gradient(
+          circle at 0 0,
+          rgba(56, 189, 248, 0.2),
+          transparent 55%
+        );
+        opacity: 0.6;
+        pointer-events: none;
+      }
+
+      .card-inner {
+        position: relative;
+        z-index: 1;
+      }
+
+      h1 {
+        font-size: 28px;
+        letter-spacing: 0.04em;
+        margin-bottom: 4px;
+      }
+
+      .subtitle {
+        font-size: 13px;
+        line-height: 1.6;
+        color: var(--text-soft);
+        max-width: 460px;
+        margin-bottom: 18px;
+      }
+
+      .cta-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 14px;
+      }
+
+      .btn-primary {
+        appearance: none;
+        border: none;
+        border-radius: 999px;
+        padding: 9px 20px;
+        font-size: 14px;
+        font-weight: 500;
+        cursor: pointer;
+        color: #0b1120;
+        background: radial-gradient(circle at 0 0, #38bdf8, #0ea5e9);
+        box-shadow: 0 12px 32px rgba(56, 189, 248, 0.5);
+        position: relative;
+        overflow: hidden;
+        transition: transform 0.15s ease-out, box-shadow 0.15s ease-out;
+      }
+
+      .btn-primary::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: radial-gradient(circle at 0 0, #e0f2fe, transparent 60%);
+        opacity: 0;
+        transition: opacity 0.2s ease-out;
+      }
+
+      .btn-primary:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 16px 40px rgba(56, 189, 248, 0.66);
+      }
+
+      .btn-primary:hover::before {
+        opacity: 0.35;
+      }
+
+      .btn-primary:active {
+        transform: translateY(0);
+        box-shadow: 0 8px 22px rgba(15, 23, 42, 0.9);
+      }
+
+      .status-line {
+        font-size: 12px;
+        color: var(--text-muted);
+        min-height: 18px;
+      }
+
+      .status-line span {
+        opacity: 0.72;
+      }
+
+      .error-text {
+        font-size: 12px;
+        margin-top: 4px;
+        color: var(--danger);
+        min-height: 16px;
+      }
+
+      .member-box {
+        margin-top: 22px;
+        border-radius: 18px;
+        border: 1px solid var(--accent-soft);
+        background: radial-gradient(
+            circle at top right,
+            rgba(56, 189, 248, 0.09),
+            transparent 55%
+          ),
+          rgba(15, 23, 42, 0.9);
+        padding: 14px 16px 14px 16px;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .member-box::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: radial-gradient(
+          circle at top left,
+          rgba(129, 230, 217, 0.18),
+          transparent 60%
+        );
+        mix-blend-mode: soft-light;
+        opacity: 0;
+        transition: opacity 0.4s ease-out;
+      }
+
+      .member-box.active::before {
+        opacity: 0.8;
+      }
+
+      .member-title {
+        font-size: 13px;
+        font-weight: 600;
+        margin-bottom: 2px;
+      }
+
+      .member-body {
+        font-size: 12px;
+        color: var(--text-muted);
+      }
+
+      .member-body strong {
+        color: #e5e7eb;
+      }
+
+      .public-box {
+        margin-top: 14px;
+        border-radius: 18px;
+        border: 1px solid rgba(30, 64, 175, 0.7);
+        background: rgba(15, 23, 42, 0.9);
+        padding: 14px 16px;
+      }
+
+      .public-title {
+        font-size: 13px;
+        font-weight: 600;
+        margin-bottom: 2px;
+      }
+
+      .public-body {
+        font-size: 12px;
+        color: var(--text-muted);
+      }
+
+      .footer-note {
+        margin-top: 18px;
+        font-size: 11px;
+        color: var(--text-soft);
+      }
+
+      .footer-note a {
+        color: var(--accent-strong);
+        text-decoration: none;
+      }
+
+      .footer-note a:hover {
+        text-decoration: underline;
+      }
+
+      .pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 2px 8px 2px 3px;
+        border-radius: 999px;
+        background: radial-gradient(circle at top left, #0ea5e9, #1e40af);
+        color: #e5e7eb;
+        font-size: 10px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        font-weight: 500;
+        margin-bottom: 10px;
+      }
+
+      .pill-icon {
+        width: 16px;
+        height: 16px;
+        border-radius: 999px;
+        background: radial-gradient(circle at 30% 0, #e0f2fe, #0369a1);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 0 0 1px rgba(15, 23, 42, 0.6);
+      }
+
+      .pill-icon span {
+        font-size: 11px;
+      }
+
+      .pill-text {
+        opacity: 0.9;
+      }
+
+      .members-only-label {
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.18em;
+        color: var(--accent-strong);
+        margin-bottom: 4px;
+      }
+
+      .hidden {
+        display: none !important;
+      }
+
+      /* Subtle animated border glow */
+      .card::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        border-radius: 28px;
+        border: 1px solid transparent;
+        background: conic-gradient(
+              from 0deg,
+              rgba(56, 189, 248, 0.35),
+              rgba(59, 130, 246, 0.1),
+              rgba(14, 165, 233, 0.3),
+              rgba(56, 189, 248, 0.35)
+            )
+            border-box;
+        mask: linear-gradient(#000 0 0) padding-box,
+          linear-gradient(#000 0 0);
+        mask-composite: xor;
+        -webkit-mask-composite: xor;
+        opacity: 0.6;
+        mix-blend-mode: screen;
+        animation: borderSpin 18s linear infinite;
+        pointer-events: none;
+      }
+
+      @keyframes borderSpin {
+        from {
+          transform: rotate(0deg);
+        }
+        to {
+          transform: rotate(360deg);
+        }
+      }
+
+      @media (max-width: 640px) {
+        body {
+          padding: 16px;
+        }
+
+        .card {
+          padding: 24px 20px 22px 20px;
+          border-radius: 20px;
+        }
+
+        .card::after {
+          border-radius: 20px;
+        }
+
+        h1 {
+          font-size: 23px;
+        }
+
+        .subtitle {
+          font-size: 12px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="shell">
+      <div class="card">
+        <div class="card-inner">
+          <div class="pill">
+            <div class="pill-icon">
+              <span>◎</span>
+            </div>
+            <span class="pill-text">Secure login preview</span>
+          </div>
+
+          <h1>Linglear</h1>
+          <p class="subtitle">
+            Basic Cognito login demo. A small “members-only” box appears only when
+            you’re logged in.
+          </p>
+
+          <div class="cta-row">
+            <button id="loginButton" class="btn-primary">Log in / Sign up</button>
+            <span class="status-line" id="statusText">
+              <span>Checking login status…</span>
+            </span>
+          </div>
+          <p id="errorText" class="error-text"></p>
+
+          <div id="membersBox" class="member-box hidden">
+            <div class="members-only-label">Members only</div>
+            <p class="member-title" id="memberTitle">Welcome back.</p>
+            <p class="member-body" id="memberBody">
+              This box is only visible when Cognito says you’re logged in.
+              <br />
+              <strong id="memberEmail"></strong>
+            </p>
+          </div>
+
+          <div class="public-box">
+            <p class="public-title">Public area</p>
+            <p class="public-body">
+              Everyone can see this, even if they’re not logged in.
+            </p>
+          </div>
+
+          <p class="footer-note">
+            Problems logging in? Make sure your Cognito callback URL is set to
+            <a href="https://linglear.com/" target="_blank" rel="noopener"
+              >https://linglear.com/</a
+            >.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // === Linglear basic Cognito login (no Amplify) ===
+
+      // Your Cognito config
+      const region = "us-east-1";
+      const userPoolId = "us-east-1_g7hqEe8iO";
+      const clientId = "6lsk8r1jbfs2g0619pb6a01t9q";
+      const cognitoDomain =
+        "https://linglear-auth-1.auth.us-east-1.amazoncognito.com";
+      const redirectUri = "https://linglear.com/";
+
+      // Build Hosted UI login URL (implicit flow: access_token + id_token in hash)
+      function buildLoginUrl() {
+        const responseType = "token id_token";
+        const scope = "openid email";
+        const url =
+          cognitoDomain +
+          "/oauth2/authorize" +
+          "?response_type=" +
+          encodeURIComponent(responseType) +
+          "&client_id=" +
+          encodeURIComponent(clientId) +
+          "&redirect_uri=" +
+          encodeURIComponent(redirectUri) +
+          "&scope=" +
+          encodeURIComponent(scope) +
+          "&identity_provider=" +
+          encodeURIComponent("Google");
+        return url;
+      }
+
+      function setStatus(message) {
+        const el = document.getElementById("statusText");
+        if (el) el.innerHTML = "<span>" + message + "</span>";
+      }
+
+      function setError(message) {
+        const el = document.getElementById("errorText");
+        if (el) el.textContent = message || "";
+      }
+
+      function setLoggedOutUI() {
+        const box = document.getElementById("membersBox");
+        if (box) box.classList.add("hidden");
+        setStatus("You are not logged in.");
+      }
+
+      // Save tokens in localStorage for this demo
+      function saveTokens(tokens) {
+        try {
+          localStorage.setItem("linglear_tokens", JSON.stringify(tokens));
+        } catch (err) {
+          console.warn("[LINGLEAR AUTH] Could not save tokens", err);
+        }
+      }
+
+      function getSavedTokens() {
+        try {
+          const raw = localStorage.getItem("linglear_tokens");
+          if (!raw) return null;
+          return JSON.parse(raw);
+        } catch (err) {
+          console.warn("[LINGLEAR AUTH] Could not read tokens", err);
           return null;
         }
-        return session;
-      } catch (e) {
-        console.warn("[LINGLEAR AUTH] Failed to parse session from storage", e);
-        return null;
-      }
-    }
-
-    function clearSession() {
-      localStorage.removeItem("linglear_auth_session");
-    }
-
-    function setLoggedInUI(session) {
-      loginBtn.style.display = "none";
-      logoutBtn.style.display = "inline-flex";
-      memberSection.style.display = "block";
-      publicSection.style.opacity = "0.85";
-
-      const email = session.email || "[unknown email]";
-      welcomeText.textContent = `Welcome, ${email}!`;
-      statusLine.textContent = "You’re logged in.";
-      authDebug.textContent = `[LINGLEAR AUTH] User is logged in as: ${email}`;
-      authDebug.classList.remove("error");
-    }
-
-    function setLoggedOutUI(message) {
-      loginBtn.style.display = "inline-flex";
-      logoutBtn.style.display = "none";
-      memberSection.style.display = "none";
-      publicSection.style.opacity = "1";
-
-      statusLine.textContent = message || "You are not logged in.";
-      statusLine.classList.remove("error");
-      authDebug.textContent = "";
-      authDebug.classList.remove("error");
-    }
-
-    function setErrorUI(message) {
-      loginBtn.style.display = "inline-flex";
-      logoutBtn.style.display = "none";
-      memberSection.style.display = "none";
-      publicSection.style.opacity = "1";
-
-      statusLine.textContent = "Error: " + message;
-      statusLine.classList.add("error");
-      authDebug.textContent = "[LINGLEAR AUTH] " + message;
-      authDebug.classList.add("error");
-    }
-
-    function parseHashTokens() {
-      if (!window.location.hash || window.location.hash.length < 2) return null;
-      const hash = window.location.hash.substring(1); // remove "#"
-      const params = new URLSearchParams(hash);
-      if (params.get("error")) {
-        const err = params.get("error");
-        const desc = params.get("error_description") || "";
-        const full = `Login error: ${err}${desc ? " – " + decodeURIComponent(desc) : ""}`;
-        console.warn("[LINGLEAR AUTH] Error from Cognito:", full);
-        // clean URL
-        history.replaceState(null, document.title, window.location.pathname + window.location.search);
-        setErrorUI(full);
-        return null;
       }
 
-      const idToken = params.get("id_token");
-      const accessToken = params.get("access_token");
-      const expiresInStr = params.get("expires_in");
-      if (!idToken || !accessToken) return null;
-
-      const expiresIn = expiresInStr ? parseInt(expiresInStr, 10) : 3600;
-      const session = saveSession(idToken, accessToken, expiresIn);
-
-      // clean URL (remove token fragment)
-      history.replaceState(null, document.title, window.location.pathname + window.location.search);
-
-      return session;
-    }
-
-    function initAuth() {
-      statusLine.textContent = "Checking login status…";
-
-      // First, see if tokens just came back from Cognito
-      const fromHash = parseHashTokens();
-      if (fromHash) {
-        setLoggedInUI(fromHash);
-        return;
+      function clearTokens() {
+        try {
+          localStorage.removeItem("linglear_tokens");
+        } catch (_) {}
       }
 
-      // Otherwise, look for stored session
-      const existing = loadSession();
-      if (existing) {
-        setLoggedInUI(existing);
-      } else {
-        setLoggedOutUI("You are not logged in.");
+      // Decode JWT payload so we can read the email (optional)
+      function decodeJwtPayload(token) {
+        try {
+          const payload = token.split(".")[1];
+          const base64 = payload.replace(/-/g, "+").replace(/_/g, "/");
+          const padded = base64.padEnd(
+            base64.length + ((4 - (base64.length % 4)) % 4),
+            "="
+          );
+          const json = atob(padded);
+          return JSON.parse(json);
+        } catch (err) {
+          console.error("[LINGLEAR AUTH] Failed to decode id_token", err);
+          return null;
+        }
       }
-    }
 
-    loginBtn.addEventListener("click", () => {
-      window.location.href = buildLoginUrl();
-    });
+      function setLoggedInUI(tokens) {
+        const box = document.getElementById("membersBox");
+        const emailEl = document.getElementById("memberEmail");
+        const titleEl = document.getElementById("memberTitle");
+        const bodyEl = document.getElementById("memberBody");
 
-    logoutBtn.addEventListener("click", () => {
-      clearSession();
-      window.location.href = buildLogoutUrl();
-    });
+        if (!tokens || !tokens.id_token) {
+          setLoggedOutUI();
+          return;
+        }
 
-    // Run init on page load
-    initAuth();
-  </script>
-</body>
+        const payload = decodeJwtPayload(tokens.id_token);
+        const email = payload && payload.email ? payload.email : "(no email)";
+
+        if (emailEl) emailEl.textContent = email;
+        if (titleEl) titleEl.textContent = "Logged in as:";
+        if (bodyEl)
+          bodyEl.innerHTML =
+            'You are now authenticated via Cognito.<br /><strong id="memberEmail">' +
+            email +
+            "</strong>";
+
+        if (box) {
+          box.classList.remove("hidden");
+          box.classList.add("active");
+        }
+
+        setStatus("Logged in.");
+      }
+
+      function parseTokensFromHash() {
+        if (!window.location.hash) return null;
+        const hash = window.location.hash.replace(/^#/, "");
+        const params = new URLSearchParams(hash);
+        const idToken = params.get("id_token");
+        const accessToken = params.get("access_token");
+        const tokenType = params.get("token_type");
+        const expiresIn = params.get("expires_in");
+
+        if (!idToken && !accessToken) return null;
+
+        return {
+          id_token: idToken || null,
+          access_token: accessToken || null,
+          token_type: tokenType || null,
+          expires_in: expiresIn ? Number(expiresIn) : null,
+        };
+      }
+
+      function cleanUrl() {
+        const url = window.location.origin + window.location.pathname;
+        window.history.replaceState({}, document.title, url);
+      }
+
+      function handleAuthCallbackIfPresent() {
+        try {
+          const tokens = parseTokensFromHash();
+          if (!tokens) return;
+
+          // Clear the URL fragment to keep things clean
+          cleanUrl();
+
+          // Save tokens for later use
+          saveTokens(tokens);
+
+          // Update UI
+          setLoggedInUI(tokens);
+        } catch (err) {
+          console.error("[LINGLEAR AUTH] Error handling auth callback:", err);
+          setError("Error: Login failed. Please try again.");
+        }
+      }
+
+      function checkExistingLogin() {
+        const tokens = getSavedTokens();
+        if (tokens && tokens.id_token) {
+          setLoggedInUI(tokens);
+        } else {
+          setLoggedOutUI();
+        }
+      }
+
+      document.addEventListener("DOMContentLoaded", () => {
+        setStatus("Checking login status…");
+        setError("");
+
+        handleAuthCallbackIfPresent();
+        checkExistingLogin();
+
+        const loginBtn = document.getElementById("loginButton");
+        if (loginBtn) {
+          loginBtn.addEventListener("click", () => {
+            setError("");
+            setStatus("Redirecting to Cognito Hosted UI…");
+            const url = buildLoginUrl();
+            window.location.href = url;
+          });
+        }
+      });
+    </script>
+  </body>
 </html>
