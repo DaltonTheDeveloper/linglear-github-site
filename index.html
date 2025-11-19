@@ -80,10 +80,6 @@
       color: #111827;
       box-shadow: 0 6px 20px rgba(15, 23, 42, 0.4);
     }
-    button.facebook {
-      background: #1877f2;
-      color: #f9fafb;
-    }
     #status {
       font-size: 0.85rem;
       color: #a5b4fc;
@@ -127,7 +123,7 @@
 <body>
   <div class="card">
     <h1>Linglear</h1>
-    <p>Basic Cognito login demo. A small “members-only” box appears only when you’re logged in.</p>
+    <p>Basic Cognito login demo. Main login uses email/password; Google is a side option.</p>
 
     <div>
       <button id="loginBtn">Log in / Sign up</button>
@@ -135,7 +131,6 @@
 
       <div class="social-row">
         <button id="googleBtn" class="google">Continue with Google</button>
-        <button id="facebookBtn" class="facebook">Continue with Facebook</button>
       </div>
 
       <div id="status">[init] Checking login status…</div>
@@ -166,21 +161,16 @@
   </div>
 
   <script>
-    // ================== CONFIG (FROM AWS) ==================
-    const COGNITO_DOMAIN = "https://us-east-1rdnegqer1.auth.us-east-1.amazoncognito.com"; // from UserPool.Domain
-    const CLIENT_ID = "5s39n3sffohs0nhf6i534f7d9h"; // from UserPoolClient.ClientId
-
-    // MUST match one of CallbackURLs exactly: "https://linglear.com/"
+    // ================== CONFIG ==================
+    const COGNITO_DOMAIN = "https://us-east-1rdnegqer1.auth.us-east-1.amazoncognito.com";
+    const CLIENT_ID = "5s39n3sffohs0nhf6i534f7d9h";
     const REDIRECT_URI = "https://linglear.com/";
-
-    // Must be subset of AllowedOAuthScopes: ["email","openid","phone"]
-    const SCOPES = "openid email";
+    const SCOPES = "openid email";  // subset of your allowed scopes
 
     // ================== ELEMENTS ==================
     const loginBtn = document.getElementById("loginBtn");
     const logoutBtn = document.getElementById("logoutBtn");
     const googleBtn = document.getElementById("googleBtn");
-    const facebookBtn = document.getElementById("facebookBtn");
     const statusEl = document.getElementById("status");
     const publicSection = document.getElementById("publicSection");
     const memberSection = document.getElementById("memberSection");
@@ -349,21 +339,14 @@
 
     // ================== BUTTON HANDLERS ==================
     loginBtn.addEventListener("click", () => {
-      const url = buildLoginUrl();
-      log("Redirecting to Cognito Hosted UI (default).");
+      const url = buildLoginUrl(); // default: Cognito email/password
+      log("Redirecting to Cognito Hosted UI (Cognito user pool).");
       window.location.href = url;
     });
 
-    // These will only work *after* you configure Google/Facebook IdPs in Cognito:
     googleBtn.addEventListener("click", () => {
-      const url = buildLoginUrl("Google"); // provider name must match IdP name in Cognito
+      const url = buildLoginUrl("Google");
       log("Redirecting to Cognito Hosted UI (Google).");
-      window.location.href = url;
-    });
-
-    facebookBtn.addEventListener("click", () => {
-      const url = buildLoginUrl("Facebook"); // provider name must match IdP name in Cognito
-      log("Redirecting to Cognito Hosted UI (Facebook).");
       window.location.href = url;
     });
 
@@ -384,7 +367,6 @@
       console.log("[LINGLEAR AUTH] REDIRECT_URI =", REDIRECT_URI);
       console.log("[LINGLEAR AUTH] SCOPES =", SCOPES);
 
-      // 1) Handle Cognito errors in hash (if Cognito returns error *to* linglear.com)
       const hashError = parseHashError();
       if (hashError) {
         applyLoggedOutUI(
@@ -396,11 +378,9 @@
         return;
       }
 
-      // 2) Handle successful login tokens in hash
       const tokensFromHash = parseHashTokens();
       if (tokensFromHash) {
         const session = saveSession(tokensFromHash);
-        // Clean up the URL so the hash isn't visible
         if (window.location.href.startsWith(REDIRECT_URI)) {
           log("Replacing history state to remove token hash from URL.");
           history.replaceState({}, document.title, REDIRECT_URI);
@@ -415,7 +395,6 @@
         return;
       }
 
-      // 3) Check existing session
       const existingSession = loadSession();
       if (existingSession) {
         applyLoggedInUI(existingSession);
