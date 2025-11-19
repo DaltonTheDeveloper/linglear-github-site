@@ -5,7 +5,6 @@
   <title>Linglear – Login Demo</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
-  <!-- Simple glassy styling just to not look awful -->
   <style>
     body {
       margin: 0;
@@ -105,9 +104,6 @@
       text-decoration: underline;
     }
   </style>
-
-  <!-- AWS Amplify (Auth-only bundle) from CDN -->
-  <script src="https://unpkg.com/aws-amplify@5.3.0/dist/aws-amplify.min.js"></script>
 </head>
 <body>
   <div class="card">
@@ -144,6 +140,12 @@
   </div>
 
   <script>
+    // ====== YOUR COGNITO CONFIG ======
+    const COGNITO_DOMAIN = "https://us-east-1rdnegqer1.auth.us-east-1.amazoncognito.com"; // no trailing slash
+    const CLIENT_ID = "5s39n3sffohs0nhf6i534f7d9h";
+    const REDIRECT_URI = "https://linglear.com/";
+    const SCOPES = "openid email profile";
+
     const loginBtn = document.getElementById("loginBtn");
     const logoutBtn = document.getElementById("logoutBtn");
     const statusEl = document.getElementById("status");
@@ -151,98 +153,143 @@
     const memberSection = document.getElementById("memberSection");
     const welcomeText = document.getElementById("welcomeText");
 
-    // 1) Make sure Amplify actually loaded
-    if (!window.aws_amplify) {
-      statusEl.textContent = "Error: AWS Amplify script did not load.";
-      console.error("aws_amplify global is missing. Check the <script src='https://unpkg.com/aws-amplify...'> tag.");
-    } else {
-      const { Amplify, Auth } = window.aws_amplify;
-
-      // 2) YOUR COGNITO CONFIG (adjust if User Pool ID differs in console)
-      const region = "us-east-1";
-      const userPoolId = "us-east-1_rdnegqer1"; // <- check this matches your User pool ID
-      const userPoolWebClientId = "5s39n3sffohs0nhf6i534f7d9h";
-      const cognitoDomain = "https://us-east-1rdnegqer1.auth.us-east-1.amazoncognito.com";
-      const redirectUrl = "https://linglear.com/"; // must match callback URL exactly
-
-      // Basic sanity check
-      if (!region || !userPoolId || !userPoolWebClientId || !cognitoDomain || !redirectUrl) {
-        statusEl.textContent = "Config error: missing Cognito values.";
-        console.error("Missing one or more Cognito config values.");
-      }
-
-      try {
-        Amplify.configure({
-          Auth: {
-            region,
-            userPoolId,
-            userPoolWebClientId,
-            oauth: {
-              domain: cognitoDomain.replace(/^https?:\/\//, ""), // Amplify expects just the host
-              scope: ["openid", "email", "profile"],
-              redirectSignIn: redirectUrl,
-              redirectSignOut: redirectUrl,
-              responseType: "code", // Authorization Code + PKCE
-            },
-          },
-        });
-      } catch (e) {
-        statusEl.textContent = "Error configuring Auth. See console.";
-        console.error("Amplify.configure error:", e);
-      }
-
-      // 3) LOGIN / LOGOUT BUTTONS
-      loginBtn.addEventListener("click", () => {
-        Auth.federatedSignIn().catch((e) => {
-          statusEl.textContent = "Error starting login. See console.";
-          console.error("federatedSignIn error:", e);
-        });
+    // ====== HELPERS ======
+    function buildLoginUrl() {
+      const params = new URLSearchParams({
+        client_id: CLIENT_ID,
+        response_type: "token",   // implicit flow: tokens in URL hash
+        scope: SCOPES,
+        redirect_uri: REDIRECT_URI,
       });
-
-      logoutBtn.addEventListener("click", async () => {
-        try {
-          await Auth.signOut();
-          statusEl.textContent = "You are logged out.";
-          memberSection.style.display = "none";
-          publicSection.style.display = "block";
-          logoutBtn.style.display = "none";
-          loginBtn.style.display = "inline-block";
-        } catch (err) {
-          statusEl.textContent = "Error logging out. See console.";
-          console.error("Error signing out:", err);
-        }
-      });
-
-      // 4) CHECK AUTH STATUS ON LOAD
-      async function checkAuth() {
-        try {
-          const user = await Auth.currentAuthenticatedUser();
-          const username =
-            user.username ||
-            (user.attributes && user.attributes.email) ||
-            "Linglear member";
-
-          statusEl.textContent = "You are logged in.";
-          welcomeText.textContent = `Welcome, ${username}!`;
-          memberSection.style.display = "block";
-          publicSection.style.display = "block";
-          loginBtn.style.display = "none";
-          logoutBtn.style.display = "inline-block";
-        } catch (err) {
-          console.log("No current user:", err && err.message);
-          statusEl.textContent = "You are not logged in.";
-          memberSection.style.display = "none";
-          publicSection.style.display = "block";
-          loginBtn.style.display = "inline-block";
-          logoutBtn.style.display = "none";
-        }
-      }
-
-      checkAuth().catch((e) => {
-        statusEl.textContent = "Auth check failed. See console.";
-        console.error("checkAuth error:", e);
-      });
+      return `${COGNITO_DOMAIN}/oauth2/authorize?${params.toString()}`;
     }
+
+    function buildLogoutUrl() {
+      const params = new URLSearchParams({
+        client_id: CLIENT_ID,
+        logout_uri: REDIRECT_URI,
+      });
+      return `${COGNITO_DOMAIN}/logout?${params.toString()}`;
+    }
+
+    function parseHashFragment() {
+      if (!location.hash || location.hash.length <= 1) return null;
+      const hash = location.hash.substring(1); // drop '#'
+      const params = new URLSearchParams(hash);
+      const idToken = params.get("id_token");
+      const accessToken = params.get("access_token");
+      const expiresIn = params.get("expires_in");
+      if (!idToken && !accessToken) return null;
+      return {
+        idToken,
+        accessToken,
+        expiresIn: expiresIn ? parseInt(expiresIn, 10) : null,
+      };
+    }
+
+    function decodeJwtPayload(token) {
+      if (!token) return null;
+      try {
+        const payload = token.split(".")[1];
+        const normalized = payload.replace(/-/g, "+").replace(/_/g, "/");
+        const json = atob(normalized);
+        return JSON.parse(json);
+      } catch (e) {
+        console.warn("Failed to decode JWT:", e);
+        return null;
+      }
+    }
+
+    function saveSession(tokens) {
+      const now = Math.floor(Date.now() / 1000);
+      let exp = null;
+      const payload = decodeJwtPayload(tokens.idToken || tokens.accessToken);
+      if (payload && payload.exp) {
+        exp = payload.exp;
+      } else if (tokens.expiresIn) {
+        exp = now + tokens.expiresIn;
+      }
+      const session = {
+        idToken: tokens.idToken || null,
+        accessToken: tokens.accessToken || null,
+        expiresAt: exp,
+      };
+      localStorage.setItem("linglear_session", JSON.stringify(session));
+      return session;
+    }
+
+    function loadSession() {
+      const raw = localStorage.getItem("linglear_session");
+      if (!raw) return null;
+      try {
+        const session = JSON.parse(raw);
+        if (!session || !session.idToken) return null;
+        const now = Math.floor(Date.now() / 1000);
+        if (session.expiresAt && now > session.expiresAt) {
+          // token expired
+          localStorage.removeItem("linglear_session");
+          return null;
+        }
+        return session;
+      } catch (e) {
+        console.warn("Failed to parse session:", e);
+        localStorage.removeItem("linglear_session");
+        return null;
+      }
+    }
+
+    function applyLoggedOutUI() {
+      statusEl.textContent = "You are not logged in.";
+      memberSection.style.display = "none";
+      publicSection.style.display = "block";
+      loginBtn.style.display = "inline-block";
+      logoutBtn.style.display = "none";
+    }
+
+    function applyLoggedInUI(session) {
+      const payload = decodeJwtPayload(session.idToken);
+      const name =
+        (payload && (payload.name || payload.email || payload["cognito:username"])) ||
+        "Linglear member";
+
+      statusEl.textContent = "You are logged in.";
+      welcomeText.textContent = `Welcome, ${name}!`;
+      memberSection.style.display = "block";
+      publicSection.style.display = "block";
+      loginBtn.style.display = "none";
+      logoutBtn.style.display = "inline-block";
+    }
+
+    // ====== BUTTON HANDLERS ======
+    loginBtn.addEventListener("click", () => {
+      window.location.href = buildLoginUrl();
+    });
+
+    logoutBtn.addEventListener("click", () => {
+      localStorage.removeItem("linglear_session");
+      window.location.href = buildLogoutUrl();
+    });
+
+    // ====== INITIAL LOAD: HANDLE CALLBACK & SESSION ======
+    (function init() {
+      // 1. If Cognito just redirected us with tokens in the hash, process them.
+      const tokensFromHash = parseHashFragment();
+      if (tokensFromHash) {
+        const session = saveSession(tokensFromHash);
+        // Clean up the URL so the hash isn't visible
+        history.replaceState({}, document.title, REDIRECT_URI);
+        applyLoggedInUI(session);
+        return;
+      }
+
+      // 2. Else, see if we already have a valid session in localStorage
+      const existingSession = loadSession();
+      if (existingSession) {
+        applyLoggedInUI(existingSession);
+      } else {
+        applyLoggedOutUI();
+      }
+    })();
   </script>
 </body>
 </html>
