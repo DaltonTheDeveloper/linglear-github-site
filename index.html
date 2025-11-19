@@ -5,7 +5,6 @@
   <title>Linglear – Login Demo</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
-  <!-- Simple glassy styling just to not look awful -->
   <style>
     body {
       margin: 0;
@@ -106,7 +105,7 @@
     }
   </style>
 
-  <!-- AWS Amplify (Auth-only bundle) from CDN -->
+  <!-- Amplify UMD bundle from CDN -->
   <script src="https://unpkg.com/aws-amplify@5.3.0/dist/aws-amplify.min.js"></script>
 </head>
 <body>
@@ -120,13 +119,11 @@
       <div id="status">Checking login status…</div>
     </div>
 
-    <!-- PUBLIC AREA -->
     <div class="section" id="publicSection">
       <h2>Public area</h2>
       <p>Everyone can see this, even if they’re not logged in.</p>
     </div>
 
-    <!-- MEMBER-ONLY AREA -->
     <div class="section" id="memberSection" style="display:none;">
       <h2>
         Member area
@@ -145,30 +142,10 @@
   </div>
 
   <script>
-    // ====== 1. CONFIGURE AMPLIFY AUTH WITH YOUR NEW VALUES  ======
-    const region = "us-east-1";
-    const userPoolId = "us-east-1_g7hqEe8iO";
-    const userPoolWebClientId = "6lsk8r1jbfs2g0619pb6a01t9q";
-    const cognitoDomain = "https://linglear-auth-1.auth.us-east-1.amazoncognito.com";
-    const redirectUrl = "https://linglear.com/"; // must match Cognito callback URLs EXACTLY
-
-    const { Amplify, Auth } = aws_amplify;
-
-    Amplify.configure({
-      Auth: {
-        region,
-        userPoolId,
-        userPoolWebClientId,
-        oauth: {
-          // Amplify expects domain WITHOUT protocol
-          domain: cognitoDomain.replace(/^https?:\/\//, ""),
-          scope: ["openid", "email"], // must match AllowedOAuthScopes in your client
-          redirectSignIn: redirectUrl,
-          redirectSignOut: redirectUrl,
-          responseType: "code", // Authorization Code + PKCE
-        },
-      },
-    });
+    // 0. If Cognito sent back an error hash (old phone_number error), wipe it
+    if (window.location.hash && window.location.hash.includes("error=")) {
+      history.replaceState(null, "", window.location.origin + window.location.pathname);
+    }
 
     const loginBtn = document.getElementById("loginBtn");
     const logoutBtn = document.getElementById("logoutBtn");
@@ -178,59 +155,91 @@
     const welcomeText = document.getElementById("welcomeText");
     const emailLine = document.getElementById("emailLine");
 
-    // ====== 2. HANDLE LOGIN / LOGOUT BUTTONS ======
-    loginBtn.addEventListener("click", () => {
-      // This sends the user to Cognito Hosted UI (email + Google buttons live there)
-      Auth.federatedSignIn();
-    });
+    // Try all likely globals for the Amplify UMD build
+    const amplifyLib =
+      window.aws_amplify ||
+      window.Amplify ||
+      window.awsAmplify ||
+      window.AwsAmplify;
 
-    logoutBtn.addEventListener("click", async () => {
-      try {
-        await Auth.signOut();
-        statusEl.textContent = "You are logged out.";
-        memberSection.style.display = "none";
-        publicSection.style.display = "block";
-        logoutBtn.style.display = "none";
-        loginBtn.style.display = "inline-block";
-        emailLine.textContent = "";
-      } catch (err) {
-        console.error("Error signing out:", err);
+    if (!amplifyLib) {
+      console.error("Amplify library not found on window.");
+      statusEl.textContent = "Error: Amplify failed to load.";
+    } else {
+      const { Amplify, Auth } = amplifyLib;
+
+      const region = "us-east-1";
+      const userPoolId = "us-east-1_g7hqEe8iO";
+      const userPoolWebClientId = "6lsk8r1jbfs2g0619pb6a01t9q";
+      const cognitoDomain = "https://linglear-auth-1.auth.us-east-1.amazoncognito.com";
+      const redirectUrl = "https://linglear.com/";
+
+      Amplify.configure({
+        Auth: {
+          region,
+          userPoolId,
+          userPoolWebClientId,
+          oauth: {
+            domain: cognitoDomain.replace(/^https?:\/\//, ""),
+            scope: ["openid", "email"],
+            redirectSignIn: redirectUrl,
+            redirectSignOut: redirectUrl,
+            responseType: "code", // Auth code + PKCE
+          },
+        },
+      });
+
+      loginBtn.addEventListener("click", () => {
+        // Opens Cognito Hosted UI (email + Google live there)
+        Auth.federatedSignIn();
+      });
+
+      logoutBtn.addEventListener("click", async () => {
+        try {
+          await Auth.signOut();
+          statusEl.textContent = "You are logged out.";
+          memberSection.style.display = "none";
+          publicSection.style.display = "block";
+          logoutBtn.style.display = "none";
+          loginBtn.style.display = "inline-block";
+          emailLine.textContent = "";
+        } catch (err) {
+          console.error("Error signing out:", err);
+        }
+      });
+
+      async function checkAuth() {
+        try {
+          const user = await Auth.currentAuthenticatedUser();
+          const attrs = user.attributes || {};
+          const email = attrs.email || "(no email on record)";
+          const username = email || user.username || "Linglear member";
+
+          console.log("[LINGLEAR] current user:", user);
+
+          statusEl.textContent = "You are logged in.";
+          welcomeText.textContent = `Welcome, ${username}!`;
+          emailLine.textContent = `Email on file: ${email}`;
+
+          memberSection.style.display = "block";
+          publicSection.style.display = "block";
+          loginBtn.style.display = "none";
+          logoutBtn.style.display = "inline-block";
+
+          // When you hook Stripe up, send `email` to your backend from here.
+        } catch (err) {
+          console.log("[LINGLEAR] No current user:", err && err.message);
+          statusEl.textContent = "You are not logged in.";
+          memberSection.style.display = "none";
+          publicSection.style.display = "block";
+          loginBtn.style.display = "inline-block";
+          logoutBtn.style.display = "none";
+          emailLine.textContent = "";
+        }
       }
-    });
 
-    // ====== 3. CHECK AUTH STATUS ON PAGE LOAD ======
-    async function checkAuth() {
-      try {
-        const user = await Auth.currentAuthenticatedUser();
-        const attrs = user.attributes || {};
-        const email = attrs.email || "(no email on record)";
-        const username = email || user.username || "Linglear member";
-
-        console.log("[LINGLEAR] current user:", user);
-
-        statusEl.textContent = "You are logged in.";
-        welcomeText.textContent = `Welcome, ${username}!`;
-        emailLine.textContent = `Email on file: ${email}`;
-
-        memberSection.style.display = "block";
-        publicSection.style.display = "block"; // keep public visible if you want
-        loginBtn.style.display = "none";
-        logoutBtn.style.display = "inline-block";
-
-        // This is the value you'll send to your Stripe backend later:
-        //   email
-      } catch (err) {
-        console.log("[LINGLEAR] No current user:", err && err.message);
-        statusEl.textContent = "You are not logged in.";
-        memberSection.style.display = "none";
-        publicSection.style.display = "block";
-        loginBtn.style.display = "inline-block";
-        logoutBtn.style.display = "none";
-        emailLine.textContent = "";
-      }
+      checkAuth();
     }
-
-    checkAuth();
   </script>
 </body>
 </html>
