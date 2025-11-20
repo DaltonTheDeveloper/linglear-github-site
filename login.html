@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Linglear – Login Demo</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <style>
+    :root {
+      --bg: #050915;
+      --card-bg: rgba(12, 22, 48, 0.92);
+      --card-border: rgba(157, 178, 255, 0.18);
+      --accent: #26a8ff;
+      --accent-soft: rgba(38, 168, 255, 0.25);
+      --accent-strong: rgba(38, 168, 255, 0.7);
+      --text-main: #f5f7ff;
+      --text-muted: #9aa3c2;
+      --text-soft: #5b6687;
+      --danger: #ff5c7a;
+      --shadow-card: 0 38px 120px rgba(0, 0, 0, 0.65);
+      --radius-xl: 30px;
+      --radius-lg: 18px;
+      --radius-full: 999px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      min-height: 100vh;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text",
+        "Segoe UI", sans-serif;
+      background: radial-gradient(circle at 15% -20%, #1c4bff 0, transparent 55%),
+        radial-gradient(circle at 110% 120%, #26a8ff 0, transparent 60%),
+        radial-gradient(circle at 0 130%, #111827 0, #020617 65%);
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 32px 16px;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .card {
+      position: relative;
+      width: 100%;
+      max-width: 640px;
+      padding: 28px 32px 32px;
+      border-radius: var(--radius-xl);
+      background: radial-gradient(
+          circle at 20% 0,
+          rgba(255, 255, 255, 0.07),
+          transparent 55%
+        ),
+        radial-gradient(circle at 120% 120%, rgba(0, 132, 255, 0.13), transparent 48%),
+        var(--card-bg);
+      border: 1px solid var(--card-border);
+      box-shadow: var(--shadow-card);
+      backdrop-filter: blur(26px);
+      overflow: hidden;
+    }
+
+    .card::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(
+        ellipse at top,
+        rgba(58, 153, 255, 0.24),
+        transparent 55%
+      );
+      mix-blend-mode: soft-light;
+      opacity: 0.85;
+      pointer-events: none;
+    }
+
+    .card-inner {
+      position: relative;
+      z-index: 2;
+    }
+
+    .title-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .title-block h1 {
+      font-size: 26px;
+      letter-spacing: 0.04em;
+    }
+
+    .title-block p {
+      margin-top: 6px;
+      font-size: 13px;
+      color: var(--text-soft);
+      max-width: 420px;
+    }
+
+    .login-btn {
+      border: none;
+      cursor: pointer;
+      border-radius: var(--radius-full);
+      padding: 10px 22px;
+      font-size: 14px;
+      font-weight: 600;
+      color: #0b1220;
+      background: radial-gradient(circle at 0 0, #8ee1ff 0, #3bb3ff 55%, #0072ff 100%);
+      box-shadow: 0 12px 35px rgba(0, 132, 255, 0.5);
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      white-space: nowrap;
+      transition: transform 0.12s ease-out, box-shadow 0.12s ease-out,
+        filter 0.12s ease-out;
+    }
+
+    .login-btn:hover {
+      transform: translateY(-1px);
+      filter: brightness(1.06);
+      box-shadow: 0 18px 40px rgba(0, 132, 255, 0.62);
+    }
+
+    .login-btn:active {
+      transform: translateY(1px) scale(0.98);
+      box-shadow: 0 6px 18px rgba(0, 132, 255, 0.55);
+    }
+
+    .status-text {
+      margin-top: 6px;
+      font-size: 12px;
+      color: var(--text-soft);
+    }
+
+    .pill-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 18px;
+      margin-bottom: 14px;
+      font-size: 11px;
+      color: var(--accent);
+    }
+
+    .pill {
+      border-radius: var(--radius-full);
+      padding: 4px 10px;
+      background: rgba(7, 89, 133, 0.35);
+      border: 1px solid rgba(56, 189, 248, 0.35);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .pill-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: radial-gradient(circle at 30% 20%, #a5f3fc, #0ea5e9);
+      box-shadow: 0 0 12px rgba(34, 211, 238, 0.9);
+    }
+
+    .sections {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      margin-top: 4px;
+    }
+
+    .section {
+      border-radius: var(--radius-lg);
+      padding: 16px 16px 15px;
+      border: 1px solid rgba(148, 163, 255, 0.3);
+      background: radial-gradient(
+          circle at top left,
+          rgba(37, 99, 235, 0.18),
+          transparent 65%
+        ),
+        rgba(12, 20, 48, 0.9);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .section.members {
+      border-color: rgba(52, 211, 153, 0.6);
+      background: radial-gradient(
+          circle at top left,
+          rgba(16, 185, 129, 0.25),
+          transparent 65%
+        ),
+        rgba(10, 27, 34, 0.94);
+    }
+
+    .section.members::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(
+        135deg,
+        rgba(45, 212, 191, 0.12),
+        rgba(37, 99, 235, 0.03)
+      );
+      mix-blend-mode: soft-light;
+      opacity: 0.9;
+      pointer-events: none;
+    }
+
+    .section h2 {
+      text-transform: uppercase;
+      font-size: 11px;
+      letter-spacing: 0.18em;
+      color: var(--text-soft);
+      margin-bottom: 6px;
+    }
+
+    .section.members h2 {
+      color: rgba(187, 247, 208, 0.95);
+    }
+
+    .section .label-muted {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-muted);
+      margin-bottom: 3px;
+    }
+
+    .section .body-text {
+      font-size: 13px;
+      color: var(--text-soft);
+      line-height: 1.35;
+    }
+
+    .section .email-highlight {
+      display: block;
+      margin-top: 2px;
+      font-size: 13px;
+      font-weight: 600;
+      color: #e5f1ff;
+    }
+
+    .member-only-hidden-note {
+      margin-top: 20px;
+      font-size: 11px;
+      color: var(--text-soft);
+      opacity: 0.9;
+    }
+
+    .member-only-hidden-note a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+
+    .member-only-hidden-note a:hover {
+      text-decoration: underline;
+    }
+
+    .footer-text {
+      margin-top: 16px;
+      font-size: 11px;
+      color: var(--text-soft);
+    }
+
+    .footer-text a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+
+    .footer-text a:hover {
+      text-decoration: underline;
+    }
+
+    .error-text {
+      margin-top: 6px;
+      font-size: 12px;
+      color: var(--danger);
+    }
+
+    .welcome-text {
+      margin-top: 6px;
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .members-only-bar {
+      font-size: 11px;
+      margin-top: 10px;
+      color: rgba(199, 210, 254, 0.85);
+    }
+
+    .logout-link {
+      font-size: 12px;
+      color: var(--accent);
+      cursor: pointer;
+      text-decoration: none;
+    }
+
+    .logout-link:hover {
+      text-decoration: underline;
+    }
+
+    @media (max-width: 540px) {
+      .card {
+        padding: 22px 18px 24px;
+      }
+      .title-row {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+      .login-btn {
+        align-self: stretch;
+        justify-content: center;
+        width: 100%;
+      }
+      .sections {
+        margin-top: 10px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="card-inner">
+      <div class="title-row">
+        <div class="title-block">
+          <h1>Linglear</h1>
+          <p>
+            Basic Cognito login demo. A small “members-only” box appears only when
+            you’re logged in.
+          </p>
+        </div>
+
+        <div>
+          <button id="loginBtn" class="login-btn">
+            <span>Log in / Sign up</span>
+          </button>
+          <div id="statusText" class="status-text">
+            Checking login status…
+          </div>
+        </div>
+      </div>
+
+      <div class="pill-row">
+        <div class="pill">
+          <span class="pill-dot"></span>
+          <span>Secure login preview</span>
+        </div>
+        <div class="pill">
+          <span>Powered by AWS&nbsp;Cognito (Hosted UI + Google)</span>
+        </div>
+      </div>
+
+      <div id="welcomeText" class="welcome-text"></div>
+      <div id="errorText" class="error-text" style="display: none"></div>
+
+      <div class="sections">
+        <section id="membersSection" class="section members" style="display: none">
+          <h2>Members only</h2>
+          <div class="label-muted">Logged in as:</div>
+          <p class="body-text">
+            You are now authenticated via Cognito.
+            <span id="userEmail" class="email-highlight"></span>
+          </p>
+          <div class="members-only-bar">
+            <span>You can now access members-only features.</span>
+            &nbsp;·&nbsp;
+            <a href="#" id="logoutLink" class="logout-link">Log out</a>
+          </div>
+        </section>
+
+        <section id="publicSection" class="section">
+          <h2>Public area</h2>
+          <div class="label-muted">Everyone</div>
+          <p class="body-text">
+            Everyone can see this, even if they’re not logged in.
+          </p>
+        </section>
+      </div>
+
+      <p class="member-only-hidden-note">
+        Problems logging in? Make sure your Cognito callback URL is set to
+        <a href="https://linglear.com/">https://linglear.com/</a>.
+      </p>
+
+      <p class="footer-text">
+        This is only a login demo. The real Linglear subtitle tools will live
+        behind this members-only area once everything is wired up.
+      </p>
+    </div>
+  </div>
+
+  <script>
+    // --------- BASIC CONFIG (matches what you created with the AWS CLI) ---------
+    const region = "us-east-1";
+    const userPoolId = "us-east-1_g7hqEe8iO";
+    const clientId = "6lsk8r1jbfs2g0619pb6a01t9q";
+    const cognitoDomain =
+      "https://linglear-auth-1.auth.us-east-1.amazoncognito.com";
+
+    // Must EXACTLY match one of the callback URLs configured on the user pool client
+    const redirectUri = "https://linglear.com/";
+
+    const scope = encodeURIComponent("openid email");
+
+    function buildLoginUrl() {
+      // Hosted UI with both Cognito user/password and Google option
+      return (
+        cognitoDomain +
+        "/oauth2/authorize" +
+        "?client_id=" +
+        encodeURIComponent(clientId) +
+        "&response_type=token" +
+        "&scope=" +
+        scope +
+        "&redirect_uri=" +
+        encodeURIComponent(redirectUri)
+      );
+    }
+
+    function buildLogoutUrl() {
+      // Sign-out URL must use logout_uri and be in the app client's logout URLs
+      return (
+        cognitoDomain +
+        "/logout" +
+        "?client_id=" +
+        encodeURIComponent(clientId) +
+        "&logout_uri=" +
+        encodeURIComponent(redirectUri)
+      );
+    }
+
+    // --------- TOKEN HELPERS ---------
+
+    function parseHashTokens() {
+      const hash = window.location.hash;
+      if (!hash || hash.length < 2) return null;
+
+      const params = new URLSearchParams(hash.substring(1));
+
+      if (params.has("error")) {
+        console.error(
+          "[LINGLEAR AUTH] Cognito returned error:",
+          params.get("error"),
+          params.get("error_description")
+        );
+        return null;
+      }
+
+      const accessToken = params.get("access_token");
+      const idToken = params.get("id_token");
+
+      if (!accessToken && !idToken) return null;
+
+      // Clean URL so the hash (with tokens) disappears from the address bar
+      try {
+        window.history.replaceState(
+          null,
+          document.title,
+          window.location.pathname + window.location.search
+        );
+      } catch (err) {
+        console.warn("[LINGLEAR AUTH] Failed to clean URL hash:", err);
+      }
+
+      return { accessToken, idToken };
+    }
+
+    function decodeJwtPayload(jwt) {
+      if (!jwt) return null;
+      const parts = jwt.split(".");
+      if (parts.length !== 3) return null;
+
+      try {
+        const payload = parts[1].replace(/-/g, "+").replace(/_/g, "/");
+        const decoded = decodeURIComponent(
+          atob(payload)
+            .split("")
+            .map(function (c) {
+              return "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2);
+            })
+            .join("")
+        );
+        return JSON.parse(decoded);
+      } catch (err) {
+        console.error("[LINGLEAR AUTH] Failed to decode JWT payload:", err);
+        return null;
+      }
+    }
+
+    // --------- UI HELPERS ---------
+
+    function setLoggedOutUI() {
+      const membersSection = document.getElementById("membersSection");
+      const publicSection = document.getElementById("publicSection");
+      const statusText = document.getElementById("statusText");
+      const errorText = document.getElementById("errorText");
+      const welcomeText = document.getElementById("welcomeText");
+      const userEmail = document.getElementById("userEmail");
+
+      if (membersSection) membersSection.style.display = "none";
+      if (publicSection) {
+        publicSection.style.opacity = "1";
+        publicSection.style.filter = "none";
+      }
+      if (statusText) statusText.textContent = "You are not logged in.";
+      if (errorText) {
+        errorText.style.display = "none";
+        errorText.textContent = "";
+      }
+      if (welcomeText) {
+        welcomeText.textContent =
+          "Sign in to unlock the members-only area (Cognito + Google).";
+      }
+      if (userEmail) userEmail.textContent = "";
+
+      // Clear stored tokens
+      localStorage.removeItem("linglear_id_token");
+      localStorage.removeItem("linglear_access_token");
+    }
+
+    function setLoggedInUI(tokens) {
+      const membersSection = document.getElementById("membersSection");
+      const publicSection = document.getElementById("publicSection");
+      const statusText = document.getElementById("statusText");
+      const errorText = document.getElementById("errorText");
+      const welcomeText = document.getElementById("welcomeText");
+      const userEmail = document.getElementById("userEmail");
+
+      let emailText = "";
+
+      if (tokens && tokens.idToken) {
+        const payload = decodeJwtPayload(tokens.idToken);
+        if (payload) {
+          emailText =
+            payload.email ||
+            payload["cognito:username"] ||
+            payload.username ||
+            "";
+        }
+      }
+
+      if (membersSection) membersSection.style.display = "block";
+      if (publicSection) {
+        publicSection.style.opacity = "0.5";
+        publicSection.style.filter = "blur(0px)";
+      }
+      if (statusText) statusText.textContent = "Logged in.";
+      if (errorText) {
+        errorText.style.display = "none";
+        errorText.textContent = "";
+      }
+      if (userEmail) userEmail.textContent = emailText || "(no email on record)";
+      if (welcomeText) {
+        welcomeText.textContent = emailText
+          ? "Welcome back, " + emailText + "!"
+          : "Welcome to the members-only area.";
+      }
+
+      if (tokens && tokens.idToken) {
+        localStorage.setItem("linglear_id_token", tokens.idToken);
+      }
+      if (tokens && tokens.accessToken) {
+        localStorage.setItem("linglear_access_token", tokens.accessToken);
+      }
+    }
+
+    function showError(msg) {
+      const errorText = document.getElementById("errorText");
+      const statusText = document.getElementById("statusText");
+      if (errorText) {
+        errorText.style.display = "block";
+        errorText.textContent = msg;
+      }
+      if (statusText) {
+        statusText.textContent = "Login failed.";
+      }
+    }
+
+    // --------- MAIN INIT ---------
+
+    function initAuth() {
+      const loginBtn = document.getElementById("loginBtn");
+      const logoutLink = document.getElementById("logoutLink");
+      const statusText = document.getElementById("statusText");
+
+      if (statusText) {
+        statusText.textContent = "Checking login status…";
+      }
+
+      if (loginBtn) {
+        loginBtn.addEventListener("click", function () {
+          window.location.href = buildLoginUrl();
+        });
+      }
+
+      if (logoutLink) {
+        logoutLink.addEventListener("click", function (e) {
+          e.preventDefault();
+          // Clear UI + tokens locally first
+          setLoggedOutUI();
+          // Then redirect to Cognito sign-out
+          window.location.href = buildLogoutUrl();
+        });
+      }
+
+      // First: see if Cognito just redirected us back with tokens in the hash
+      const tokensFromHash = parseHashTokens();
+      if (tokensFromHash && (tokensFromHash.idToken || tokensFromHash.accessToken)) {
+        console.log("[LINGLEAR AUTH] Tokens found in URL hash.");
+        setLoggedInUI(tokensFromHash);
+        return;
+      }
+
+      // If not, fall back to stored tokens in localStorage (simple demo behaviour)
+      const storedIdToken = localStorage.getItem("linglear_id_token");
+      if (storedIdToken) {
+        console.log("[LINGLEAR AUTH] Found stored id_token in localStorage.");
+        setLoggedInUI({ idToken: storedIdToken });
+      } else {
+        console.log("[LINGLEAR AUTH] No tokens found. User is logged out.");
+        setLoggedOutUI();
+      }
+    }
+
+    window.addEventListener("DOMContentLoaded", initAuth);
+  </script>
+</body>
+</html>
