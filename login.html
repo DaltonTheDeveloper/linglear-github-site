@@ -520,6 +520,9 @@
       // Clear stored tokens
       localStorage.removeItem("linglear_id_token");
       localStorage.removeItem("linglear_access_token");
+      // Also remove our friendly keys used across dashboard pages
+      localStorage.removeItem("ling_auth_email");
+      localStorage.removeItem("ling_auth_id_token");
     }
 
     function setLoggedInUI(tokens) {
@@ -561,10 +564,17 @@
       }
 
       if (tokens && tokens.idToken) {
+        // Persist the raw Cognito ID token
         localStorage.setItem("linglear_id_token", tokens.idToken);
+        // Store a duplicate key that other pages will look for
+        localStorage.setItem("ling_auth_id_token", tokens.idToken);
       }
       if (tokens && tokens.accessToken) {
         localStorage.setItem("linglear_access_token", tokens.accessToken);
+      }
+      // Persist the email separately so dashboard pages can greet the user
+      if (emailText) {
+        localStorage.setItem("ling_auth_email", emailText);
       }
     }
 

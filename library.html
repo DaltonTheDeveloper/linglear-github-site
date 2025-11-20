@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Linglear – Library</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg-dark: #050b1e;
+      --sidebar-bg: rgba(12, 22, 48, 0.95);
+      --content-bg: rgba(7, 17, 38, 0.9);
+      --card-bg: rgba(6, 16, 35, 0.92);
+      --accent: #58d0ff;
+      --text-main: #f5f7fa;
+      --text-muted: #93a3c5;
+      --radius-lg: 20px;
+      --radius-pill: 999px;
+      --sidebar-width: 240px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { display: flex; min-height: 100vh; background: var(--bg-dark); font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: var(--text-main); }
+    a { color: inherit; text-decoration: none; }
+    .dashboard { display: flex; flex: 1; width: 100%; }
+    .sidebar { width: var(--sidebar-width); background: var(--sidebar-bg); padding: 24px 20px; display: flex; flex-direction: column; justify-content: space-between; }
+    .sidebar-brand { display: flex; align-items: center; gap: 10px; margin-bottom: 40px; }
+    .sidebar-brand img { width: 28px; height: 28px; }
+    .sidebar-brand span { font-weight: 600; font-size: 1.1rem; }
+    .sidebar-nav { flex-grow: 1; display: flex; flex-direction: column; gap: 8px; }
+    .sidebar-nav a { display: block; padding: 10px 14px; border-radius: 10px; color: var(--text-muted); font-size: 0.9rem; transition: background 0.1s ease, color 0.1s ease; }
+    .sidebar-nav a:hover, .sidebar-nav a.active { background: rgba(83, 224, 255, 0.12); color: var(--text-main); }
+    .sidebar-footer { font-size: 0.75rem; color: var(--text-muted); }
+    .sidebar-footer .email { display: block; margin-bottom: 8px; font-weight: 500; color: var(--accent); word-break: break-all; }
+    .sidebar-footer button { margin-top: 12px; padding: 8px 14px; border-radius: var(--radius-pill); border: 1px solid rgba(148, 163, 184, 0.35); background: rgba(5, 16, 35, 0.8); color: var(--text-muted); cursor: pointer; font-size: 0.85rem; transition: background 0.1s ease, color 0.1s ease, border-color 0.1s ease; }
+    .sidebar-footer button:hover { background: rgba(15, 25, 52, 0.9); border-color: rgba(83, 224, 255, 0.6); color: var(--text-main); }
+    .dashboard-content { flex: 1; padding: 40px; overflow-y: auto; background: var(--content-bg); }
+    .dashboard-content h1 { font-size: 1.8rem; font-weight: 600; margin-bottom: 20px; }
+    .dashboard-content p { font-size: 0.95rem; color: var(--text-muted); margin-bottom: 30px; line-height: 1.6; }
+    @media (max-width: 700px) { .sidebar { position: fixed; left: 0; top: 0; bottom: 0; transform: translateX(-100%); transition: transform 0.3s ease; z-index: 1000; width: 220px; } .sidebar.open { transform: translateX(0); } .sidebar-toggle { position: fixed; top: 20px; left: 20px; z-index: 1100; width: 28px; height: 28px; cursor: pointer; } .dashboard-content { padding: 80px 20px; } }
+  </style>
+</head>
+<body>
+  <div class="dashboard">
+    <div class="sidebar" id="sidebar">
+      <div>
+        <div class="sidebar-brand">
+          <img src="fox-logo-glow.png" alt="Linglear logo" />
+          <span>Linglear</span>
+        </div>
+        <nav class="sidebar-nav">
+          <a href="dashboard.html" id="nav-dashboard">Home</a>
+          <a href="library.html" id="nav-library" class="active">Library</a>
+          <a href="srs.html" id="nav-srs">SRS</a>
+          <a href="goals.html" id="nav-goals">Goals &amp; Contributions</a>
+          <a href="messages.html" id="nav-messages">Messages &amp; Affiliate</a>
+          <a href="progress.html" id="nav-progress">Progress Tracker</a>
+        </nav>
+      </div>
+      <div class="sidebar-footer">
+        <span class="email" id="sidebarEmail"></span>
+        <button id="logoutBtn">Log out</button>
+      </div>
+    </div>
+    <main class="dashboard-content">
+      <h1>Library</h1>
+      <p>Your subtitle library will appear here. Browse and search through the shows and words you've collected.</p>
+    </main>
+    <div class="sidebar-toggle" id="sidebarToggle">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+    </div>
+  </div>
+  <script>
+    // Shared auth + sidebar logic
+    (function() {
+      const idToken = localStorage.getItem('ling_auth_id_token');
+      if (!idToken) {
+        window.location.href = 'login.html';
+        return;
+      }
+      let email = localStorage.getItem('ling_auth_email');
+      function decodeJwtPayload(jwt) {
+        const parts = jwt.split('.');
+        if (parts.length !== 3) return null;
+        try {
+          const payload = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+          const decoded = decodeURIComponent(atob(payload).split('').map(function(c) {
+            return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+          }).join(''));
+          return JSON.parse(decoded);
+        } catch (err) { return null; }
+      }
+      if (!email) {
+        const payload = decodeJwtPayload(idToken);
+        if (payload) {
+          email = payload.email || payload['cognito:username'] || payload.username || '';
+          if (email) {
+            localStorage.setItem('ling_auth_email', email);
+          }
+        }
+      }
+      document.getElementById('sidebarEmail').textContent = email || '';
+    })();
+    document.getElementById('logoutBtn').addEventListener('click', function() {
+      localStorage.removeItem('ling_auth_email');
+      localStorage.removeItem('ling_auth_id_token');
+      localStorage.removeItem('linglear_id_token');
+      localStorage.removeItem('linglear_access_token');
+      window.location.href = 'login.html';
+    });
+    const sidebar = document.getElementById('sidebar');
+    const toggle = document.getElementById('sidebarToggle');
+    toggle.addEventListener('click', function() {
+      sidebar.classList.toggle('open');
+    });
+  </script>
+</body>
+</html>
