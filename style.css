@@ -1,0 +1,438 @@
+/*
+  Linglear Site Styles
+
+  This stylesheet defines a clean, semi‑minimalist visual language that
+  complements the existing Linglear login page. Colours, typefaces and
+  layout conventions are carried over from the login demo to ensure
+  continuity, while providing flexible components such as the navbar,
+  hero, cards, timeline and pricing grids for the new pages. The
+  variables defined under :root mirror those in the original login
+  example so accent colours, shadows and radii remain consistent.
+
+  Feel free to extend this file with additional classes if new pages
+  require bespoke layouts; however try to reuse the provided
+  components wherever possible to maintain a cohesive look and feel.
+*/
+
+:root {
+  /* Core palette extracted from the login demo */
+  --bg: #050915;
+  --card-bg: rgba(12, 22, 48, 0.92);
+  --card-border: rgba(157, 178, 255, 0.18);
+  --accent: #26a8ff;
+  --accent-hover: #3bb3ff;
+  --text-main: #f5f7ff;
+  --text-muted: #9aa3c2;
+  --text-soft: #5b6687;
+  --radius-xl: 30px;
+  --radius-lg: 18px;
+  --radius-full: 999px;
+}
+
+/* Global resets */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  min-height: 100vh;
+  background: radial-gradient(circle at 15% -20%, #1c4bff 0, transparent 55%),
+    radial-gradient(circle at 110% 120%, #26a8ff 0, transparent 60%),
+    radial-gradient(circle at 0 130%, #111827 0, #020617 65%);
+  color: var(--text-main);
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text",
+    "Segoe UI", sans-serif;
+}
+
+/* Navigation bar */
+.navbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 32px;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  background: rgba(12, 22, 48, 0.9);
+  border-bottom: 1px solid var(--card-border);
+  backdrop-filter: blur(20px);
+}
+
+.logo-container {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.logo-container img {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px; /* Rounded edges reminiscent of an iOS app icon */
+}
+
+.logo-container span {
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+}
+
+.nav-links {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.nav-links a {
+  color: var(--text-main);
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 500;
+  padding: 8px 0;
+  border-bottom: 2px solid transparent;
+  transition: color 0.15s ease-out, border-bottom-color 0.15s ease-out;
+}
+
+.nav-links a:hover {
+  color: var(--accent);
+}
+
+.nav-links a.active {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+}
+
+/* Auth buttons container within the nav */
+.auth-buttons {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-left: 24px;
+}
+
+.user-name {
+  font-size: 14px;
+  color: var(--text-muted);
+  margin-right: 8px;
+}
+
+.login-btn-small,
+.logout-btn-small {
+  border: none;
+  cursor: pointer;
+  border-radius: var(--radius-full);
+  padding: 8px 18px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #0b1220;
+  background: radial-gradient(
+    circle at 0 0,
+    #8ee1ff 0,
+    #3bb3ff 55%,
+    #0072ff 100%
+  );
+  box-shadow: 0 8px 25px rgba(0, 132, 255, 0.5);
+  transition: transform 0.12s ease-out, box-shadow 0.12s ease-out,
+    filter 0.12s ease-out;
+}
+
+.login-btn-small:hover,
+.logout-btn-small:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.06);
+  box-shadow: 0 12px 35px rgba(0, 132, 255, 0.62);
+}
+
+.login-btn-small:active,
+.logout-btn-small:active {
+  transform: translateY(1px) scale(0.98);
+  box-shadow: 0 4px 12px rgba(0, 132, 255, 0.55);
+}
+
+/* Hero section */
+.hero {
+  margin-top: 140px; /* Offset the fixed nav */
+  text-align: center;
+  padding: 0 16px;
+}
+
+.hero h1 {
+  font-size: 42px;
+  max-width: 800px;
+  margin: 0 auto 16px;
+  line-height: 1.2;
+}
+
+.hero p {
+  font-size: 18px;
+  max-width: 620px;
+  margin: 0 auto 24px;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+.hero-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.btn-primary,
+.btn-secondary {
+  padding: 12px 28px;
+  border-radius: var(--radius-full);
+  font-size: 15px;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.btn-primary {
+  color: #0b1220;
+  background: radial-gradient(
+    circle at 0 0,
+    #8ee1ff 0,
+    #3bb3ff 55%,
+    #0072ff 100%
+  );
+  box-shadow: 0 8px 25px rgba(0, 132, 255, 0.5);
+  display: inline-block;
+  transition: transform 0.12s ease-out, box-shadow 0.12s ease-out,
+    filter 0.12s ease-out;
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+  filter: brightness(1.06);
+  box-shadow: 0 12px 35px rgba(0, 132, 255, 0.62);
+}
+
+.btn-secondary {
+  color: var(--accent);
+  background: transparent;
+  border: 1px solid var(--accent);
+  transition: background 0.12s ease-out, color 0.12s ease-out;
+}
+
+.btn-secondary:hover {
+  background: var(--accent);
+  color: #0b1220;
+}
+
+/* Generic container for page content */
+.section-container {
+  max-width: 1000px;
+  margin: 80px auto;
+  padding: 0 32px;
+}
+
+/* Feature cards on landing page */
+.feature-cards {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 24px;
+}
+
+.feature-card {
+  flex: 1 1 280px;
+  padding: 24px;
+  border-radius: var(--radius-lg);
+  background: rgba(12, 22, 48, 0.9);
+  border: 1px solid var(--card-border);
+  backdrop-filter: blur(16px);
+}
+
+.feature-card h3 {
+  margin-bottom: 8px;
+  font-size: 20px;
+  color: var(--accent);
+}
+
+.feature-card p {
+  font-size: 14px;
+  line-height: 1.4;
+  color: var(--text-muted);
+}
+
+/* Timeline used in the roadmap page */
+.timeline {
+  position: relative;
+  margin-left: 40px;
+  padding-left: 20px;
+}
+
+.timeline::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--accent);
+  opacity: 0.4;
+}
+
+.timeline-item {
+  position: relative;
+  margin-bottom: 40px;
+}
+
+.timeline-item:last-child {
+  margin-bottom: 0;
+}
+
+.timeline-point {
+  position: absolute;
+  left: -42px;
+  top: 0;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 10px rgba(38, 168, 255, 0.8);
+}
+
+.timeline-item h4 {
+  margin-bottom: 6px;
+  font-size: 18px;
+  color: var(--text-main);
+}
+
+.timeline-item time {
+  font-size: 12px;
+  color: var(--text-muted);
+  display: block;
+  margin-bottom: 4px;
+}
+
+.timeline-item p {
+  font-size: 14px;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+/* Pricing grid on subscription page */
+.pricing-grid {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 24px;
+}
+
+.pricing-card {
+  flex: 1 1 280px;
+  padding: 24px;
+  border-radius: var(--radius-lg);
+  background: rgba(12, 22, 48, 0.9);
+  border: 1px solid var(--card-border);
+  text-align: center;
+}
+
+.pricing-card h3 {
+  margin-bottom: 12px;
+  font-size: 20px;
+  color: var(--accent);
+}
+
+.pricing-card .price {
+  font-size: 36px;
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+
+.pricing-card ul {
+  list-style: none;
+  margin-bottom: 24px;
+}
+
+.pricing-card li {
+  font-size: 14px;
+  color: var(--text-muted);
+  margin: 6px 0;
+}
+
+.pricing-card .btn-primary {
+  display: inline-block;
+}
+
+/* Social cards on join page */
+.social-links {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 20px;
+  margin-top: 32px;
+}
+
+.social-card {
+  flex: 1 1 240px;
+  padding: 20px;
+  border-radius: var(--radius-lg);
+  background: rgba(12, 22, 48, 0.9);
+  border: 1px solid var(--card-border);
+  text-align: center;
+}
+
+.social-card h4 {
+  margin-bottom: 8px;
+  font-size: 18px;
+  color: var(--accent);
+}
+
+.social-card p {
+  font-size: 14px;
+  color: var(--text-muted);
+  margin-bottom: 12px;
+}
+
+.social-card a {
+  color: var(--accent);
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.social-card a:hover {
+  text-decoration: underline;
+}
+
+/* Dashboard specific styling */
+.dashboard-container {
+  max-width: 900px;
+  margin: 120px auto 80px;
+  padding: 0 32px;
+}
+
+.dashboard-card {
+  padding: 24px;
+  border-radius: var(--radius-lg);
+  background: rgba(12, 22, 48, 0.9);
+  border: 1px solid var(--card-border);
+  text-align: left;
+}
+
+.dashboard-card h2 {
+  font-size: 24px;
+  margin-bottom: 12px;
+}
+
+.dashboard-card p {
+  font-size: 14px;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+.dashboard-card .logout-link {
+  display: inline-block;
+  margin-top: 20px;
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.dashboard-card .logout-link:hover {
+  text-decoration: underline;
+}

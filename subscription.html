@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Linglear – Subscription Options</title>
+  <link rel="icon" type="image/png" href="fox-logo-glow.png" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <nav class="navbar">
+    <div class="logo-container">
+      <img src="fox-logo-glow.png" alt="Linglear logo" />
+      <span>Linglear</span>
+    </div>
+    <div class="nav-links">
+      <a href="index.html">Home</a>
+      <a href="roadmap.html">Roadmap</a>
+      <a href="download.html">Download Extension</a>
+      <a href="subscription.html" class="active">Subscriptions</a>
+      <a href="join.html">Join the Convo</a>
+      <a href="dashboard.html">Dashboard</a>
+    </div>
+    <div class="auth-buttons">
+      <span id="userName" class="user-name"></span>
+      <button id="loginBtn" class="login-btn-small">Log in / Sign up</button>
+      <button id="logoutBtn" class="logout-btn-small" style="display: none;">Log out</button>
+    </div>
+  </nav>
+
+  <section class="section-container">
+    <h1 style="font-size:32px; margin-bottom:24px;">Choose your plan</h1>
+    <p style="font-size:16px; color: var(--text-muted); max-width:700px; margin-bottom:40px;">
+      Whether you’re just getting started or want unlimited access to all of
+      Linglear’s advanced features, there’s a plan for you. Pricing will go
+      live soon as we polish our subscription tiers.
+    </p>
+    <div class="pricing-grid">
+      <div class="pricing-card">
+        <h3>Free</h3>
+        <div class="price">$0</div>
+        <ul>
+          <li>Basic subtitle overlay</li>
+          <li>10 saved words per month</li>
+          <li>Limited translations</li>
+        </ul>
+        <a class="btn-primary" style="pointer-events:none; opacity:0.6;">Current Plan</a>
+      </div>
+
+      <div class="pricing-card">
+        <h3>Pro</h3>
+        <div class="price">$5<span style="font-size:16px;">/mo</span></div>
+        <ul>
+          <li>Unlimited saved words</li>
+          <li>Advanced translation options</li>
+          <li>Personal vocabulary quizzes</li>
+        </ul>
+        <a class="btn-primary" style="pointer-events:none; opacity:0.6;">Coming Soon</a>
+      </div>
+
+      <div class="pricing-card">
+        <h3>Premium</h3>
+        <div class="price">$10<span style="font-size:16px;">/mo</span></div>
+        <ul>
+          <li>All Pro features</li>
+          <li>Priority support</li>
+          <li>Early access to new features</li>
+        </ul>
+        <a class="btn-primary" style="pointer-events:none; opacity:0.6;">Coming Soon</a>
+      </div>
+    </div>
+  </section>
+
+  <script src="auth.js"></script>
+</body>
+</html>

@@ -2,444 +2,71 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Linglear – Immersive Language Learning</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
-  <style>
-    :root {
-      --bg-dark: #050b1e;
-      --bg-dark-2: #07172e;
-      --card-bg: rgba(12, 22, 48, 0.92);
-      --accent: #58d0ff;
-      --accent-soft: rgba(88, 208, 255, 0.25);
-      --text-main: #f5f7fa;
-      --text-muted: #93a3c5;
-      --radius-lg: 20px;
-      --radius-pill: 999px;
-      --nav-height: 64px;
-    }
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
-    body {
-      min-height: 100vh;
-      font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      color: var(--text-main);
-      background: var(--bg-dark);
-      scroll-behavior: smooth;
-    }
-    a { color: inherit; text-decoration: none; }
-    /* Top navigation bar */
-    .top-nav {
-      height: var(--nav-height);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 0 24px;
-      background: rgba(7, 17, 38, 0.9);
-      backdrop-filter: blur(8px);
-      position: sticky;
-      top: 0;
-      z-index: 1000;
-    }
-    .nav-left {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-    .nav-left img {
-      width: 32px;
-      height: 32px;
-    }
-    .brand-name {
-      font-weight: 600;
-      font-size: 1.1rem;
-    }
-    .nav-links {
-      display: flex;
-      gap: 20px;
-      font-size: 0.9rem;
-    }
-    .nav-links a {
-      color: var(--text-muted);
-      padding: 6px 10px;
-      border-radius: var(--radius-pill);
-      transition: background 0.15s ease, color 0.15s ease;
-    }
-    .nav-links a:hover {
-      background: rgba(83, 224, 255, 0.1);
-      color: var(--text-main);
-    }
-    .nav-login-btn {
-      border: none;
-      cursor: pointer;
-      border-radius: var(--radius-pill);
-      padding: 8px 18px;
-      font-size: 0.9rem;
-      font-weight: 600;
-      color: #031017;
-      background: linear-gradient(130deg, #00a7cc, #0082ff);
-      box-shadow: 0 14px 40px rgba(27, 163, 255, 0.6);
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      transition: transform 0.1s ease, box-shadow 0.1s ease, filter 0.1s ease;
-    }
-    .nav-login-btn:hover {
-      transform: translateY(-1px);
-      filter: brightness(1.05);
-      box-shadow: 0 20px 60px rgba(27, 163, 255, 0.8);
-    }
-    /* Hero section */
-    .hero {
-      min-height: calc(100vh - var(--nav-height));
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 60px 20px;
-      background:
-        radial-gradient(circle at 0% 0%, rgba(88, 208, 255, 0.18) 0, transparent 60%),
-        radial-gradient(circle at 100% 100%, rgba(37, 99, 235, 0.18) 0, transparent 60%),
-        var(--bg-dark-2);
-    }
-    .hero-inner {
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-      gap: 40px;
-      align-items: center;
-      max-width: 1200px;
-      width: 100%;
-    }
-    .hero-text h1 {
-      font-size: clamp(2.2rem, 4vw + 1rem, 3rem);
-      font-weight: 700;
-      margin-bottom: 16px;
-      line-height: 1.15;
-    }
-    .hero-text p {
-      font-size: 1rem;
-      color: var(--text-muted);
-      max-width: 40rem;
-      margin-bottom: 24px;
-      line-height: 1.6;
-    }
-    .hero-actions {
-      display: flex;
-      gap: 14px;
-      flex-wrap: wrap;
-    }
-    .btn-primary,
-    .btn-ghost {
-      border-radius: var(--radius-pill);
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      font-weight: 600;
-      cursor: pointer;
-      text-decoration: none;
-    }
-    .btn-primary {
-      padding: 12px 24px;
-      background: linear-gradient(130deg, #00a7cc, #0082ff);
-      color: #021219;
-      box-shadow: 0 18px 50px rgba(27, 163, 255, 0.7);
-    }
-    .btn-primary:hover {
-      transform: translateY(-1px);
-      box-shadow: 0 22px 80px rgba(27, 163, 255, 0.9);
-    }
-    .btn-ghost {
-      padding: 11px 22px;
-      border: 1px solid rgba(148, 163, 184, 0.35);
-      background: rgba(5, 16, 35, 0.85);
-      color: var(--text-muted);
-      transition: background 0.1s ease, color 0.1s ease, border-color 0.1s ease;
-    }
-    .btn-ghost:hover {
-      background: rgba(15, 25, 52, 0.9);
-      border-color: rgba(83, 224, 255, 0.7);
-      color: var(--text-main);
-    }
-    .hero-logo {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-    }
-    .hero-logo img {
-      width: 260px;
-      height: 260px;
-      object-fit: contain;
-      filter: drop-shadow(0 0 50px rgba(83, 224, 255, 0.8));
-    }
-    /* Generic section styles */
-    .section {
-      padding: 80px 20px;
-    }
-    .section-inner {
-      max-width: 1000px;
-      margin: 0 auto;
-    }
-    .section h2 {
-      font-size: 1.6rem;
-      font-weight: 600;
-      margin-bottom: 20px;
-    }
-    .section p {
-      font-size: 0.95rem;
-      color: var(--text-muted);
-      line-height: 1.6;
-      margin-bottom: 20px;
-    }
-    .card-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-      gap: 20px;
-      margin-top: 30px;
-    }
-    .card {
-      background: var(--card-bg);
-      border: 1px solid rgba(148, 163, 184, 0.25);
-      border-radius: var(--radius-lg);
-      padding: 24px;
-      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
-      min-height: 200px;
-      transition: transform 0.12s ease, box-shadow 0.12s ease;
-    }
-    .card:hover {
-      transform: translateY(-4px);
-      box-shadow: 0 30px 80px rgba(0, 0, 0, 0.8);
-    }
-    .card h3 {
-      font-size: 1.2rem;
-      margin-bottom: 10px;
-    }
-    .card p {
-      font-size: 0.9rem;
-      color: var(--text-muted);
-      line-height: 1.5;
-    }
-    /* reveal animations */
-    .reveal {
-      opacity: 0;
-      transform: translateY(40px);
-      transition: opacity 0.8s ease-out, transform 0.8s ease-out;
-    }
-    .reveal.active {
-      opacity: 1;
-      transform: translateY(0);
-    }
-    footer {
-      padding: 40px 20px;
-      font-size: 0.8rem;
-      color: var(--text-muted);
-      text-align: center;
-      border-top: 1px solid rgba(148, 163, 184, 0.2);
-    }
-    @media (max-width: 840px) {
-      .hero-inner {
-        grid-template-columns: minmax(0, 1fr);
-        text-align: center;
-      }
-      .hero-logo {
-        margin-top: 40px;
-      }
-    }
-    @media (max-width: 600px) {
-      .nav-links {
-        display: none;
-      }
-    }
-  </style>
+  <title>Linglear – Learn languages effortlessly</title>
+  <link rel="icon" type="image/png" href="fox-logo-glow.png" />
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <header class="top-nav">
-    <div class="nav-left">
-      <img src="fox-logo-glow.png" alt="Linglear fox logo" />
-      <span class="brand-name">Linglear</span>
+  <nav class="navbar">
+    <div class="logo-container">
+      <img src="fox-logo-glow.png" alt="Linglear logo" />
+      <span>Linglear</span>
     </div>
-    <nav class="nav-links">
-      <a href="#how">How it works</a>
-      <a href="#download">Download &amp; Join</a>
-      <a href="#contact">Contact</a>
-      <a href="#subscribe">Subscribe</a>
-      <a href="#roadmap">Roadmap</a>
-    </nav>
-    <button id="loginBtn" class="nav-login-btn">Log in / Sign up</button>
-  </header>
+    <div class="nav-links">
+      <a href="index.html" class="active">Home</a>
+      <a href="roadmap.html">Roadmap</a>
+      <a href="download.html">Download Extension</a>
+      <a href="subscription.html">Subscriptions</a>
+      <a href="join.html">Join the Convo</a>
+      <a href="dashboard.html">Dashboard</a>
+    </div>
+    <div class="auth-buttons">
+      <span id="userName" class="user-name"></span>
+      <button id="loginBtn" class="login-btn-small">Log in / Sign up</button>
+      <button id="logoutBtn" class="logout-btn-small" style="display: none;">Log out</button>
+    </div>
+  </nav>
 
-  <main>
-    <!-- Hero -->
-    <section class="hero reveal">
-      <div class="hero-inner">
-        <div class="hero-text">
-          <h1>Language immersion, reimagined.</h1>
-          <p>
-            Turn your favorite shows into a personal tutor with bilingual subtitles,
-            hover translations and sentence explanations. Learn naturally while you watch.
-          </p>
-          <div class="hero-actions">
-            <a href="login.html" class="btn-primary">Get started</a>
-            <a href="#how" class="btn-ghost">Learn more</a>
-          </div>
-        </div>
-        <div class="hero-logo">
-          <img src="fox-logo-glow.png" alt="Linglear fox logo" />
-        </div>
-      </div>
-    </section>
+  <section class="hero">
+    <h1>Unlock your potential with AI‑driven language learning</h1>
+    <p>
+      Enhance your comprehension with smart subtitles, interactive transcripts and
+      real‑time vocabulary training. Linglear works alongside your favourite
+      streaming services to help you master new languages faster.
+    </p>
+    <div class="hero-buttons">
+      <a href="download.html" class="btn-primary">Get the Extension</a>
+      <a href="#features" class="btn-secondary">Learn more</a>
+    </div>
+  </section>
 
-    <!-- How it works -->
-    <section id="how" class="section reveal">
-      <div class="section-inner">
-        <h2>How it works</h2>
+  <section id="features" class="section-container">
+    <div class="feature-cards">
+      <div class="feature-card">
+        <h3>Smart Subtitles</h3>
         <p>
-          Linglear overlays smart bilingual subtitles on top of your streaming service. Pause, hover and click to explore every word and sentence. Export new words into your preferred spaced repetition system.
+          Translate unknown words on the fly and see them highlighted in your
+          native language as you watch.
         </p>
-        <div class="card-grid">
-          <div class="card">
-            <h3>Hover translations</h3>
-            <p>Get instant translations and pronunciations by hovering over any word or phrase.</p>
-          </div>
-          <div class="card">
-            <h3>Sentence explanations</h3>
-            <p>Understand grammar and nuance with context-aware sentence breakdowns.</p>
-          </div>
-          <div class="card">
-            <h3>SRS exports</h3>
-            <p>Collect vocabulary as you watch and export it seamlessly to your study deck.</p>
-          </div>
-        </div>
       </div>
-    </section>
-
-    <!-- Download and Join -->
-    <section id="download" class="section reveal">
-      <div class="section-inner">
-        <h2>Download &amp; Join the conversation</h2>
+      <div class="feature-card">
+        <h3>Vocabulary Builder</h3>
         <p>
-          Install the Linglear browser extension to start learning today. Join our community to share your progress and meet fellow learners.
+          Save unfamiliar words to your personal list and practise them later
+          with spaced repetition exercises.
         </p>
-        <div class="card-grid">
-          <div class="card">
-            <h3>Download extension</h3>
-            <p>Get Linglear for Chrome and Firefox. Setup takes less than a minute.</p>
-          </div>
-          <div class="card">
-            <h3>Join the community</h3>
-            <p>Meet other Linglear users, ask questions and share your achievements in our Discord.</p>
-          </div>
-        </div>
       </div>
-    </section>
-
-    <!-- Contact -->
-    <section id="contact" class="section reveal">
-      <div class="section-inner">
-        <h2>Contact us</h2>
+      <div class="feature-card">
+        <h3>Seamless Learning</h3>
         <p>
-          Have questions or feedback? We'd love to hear from you. Reach out anytime via email or through our community channels.
+          Linglear sits quietly in the corner, enhancing your favourite
+          streaming platform without interrupting your viewing experience.
         </p>
-        <div class="card-grid">
-          <div class="card">
-            <h3>Email support</h3>
-            <p>Send us a message at <a href="mailto:support@linglear.com" style="color: var(--accent)">support@linglear.com</a> and we'll get back to you.</p>
-          </div>
-          <div class="card">
-            <h3>Follow us</h3>
-            <p>Stay up to date with announcements by following Linglear on social media.</p>
-          </div>
-        </div>
       </div>
-    </section>
+    </div>
+  </section>
 
-    <!-- Subscribe -->
-    <section id="subscribe" class="section reveal">
-      <div class="section-inner">
-        <h2>Subscribe</h2>
-        <p>
-          Unlock unlimited access and advanced features. Subscribe to Linglear and support continued development. Your subscription includes a free trial and the ability to cancel at any time.
-        </p>
-        <div class="hero-actions">
-          <a href="login.html" class="btn-primary">Sign up &amp; subscribe</a>
-          <a href="#" class="btn-ghost">Learn about billing</a>
-        </div>
-      </div>
-    </section>
-
-    <!-- Roadmap -->
-    <section id="roadmap" class="section reveal">
-      <div class="section-inner">
-        <h2>Product roadmap</h2>
-        <p>
-          We're just getting started. Here's a preview of what we're building next.
-        </p>
-        <div class="card-grid">
-          <div class="card">
-            <h3>Goal tracking</h3>
-            <p>Set weekly study targets and visualize your progress over time.</p>
-          </div>
-          <div class="card">
-            <h3>Friend messaging</h3>
-            <p>Exchange tips and challenge your friends directly within Linglear.</p>
-          </div>
-          <div class="card">
-            <h3>Gamified progress</h3>
-            <p>Earn badges and achievements as you finish series and master vocabulary.</p>
-          </div>
-        </div>
-      </div>
-    </section>
-  </main>
-
-  <footer>
-    &copy; <span id="year"></span> Linglear. All rights reserved.
-  </footer>
-
-  <script>
-    // dynamic year
-    document.getElementById('year').textContent = new Date().getFullYear();
-
-    // intersection observer for reveal elements (with fallback)
-    const revealEls = document.querySelectorAll('.reveal');
-    if ('IntersectionObserver' in window) {
-      const revealObserver = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-          if (entry.isIntersecting) {
-            entry.target.classList.add('active');
-            revealObserver.unobserve(entry.target);
-          }
-        });
-      }, { threshold: 0.1 });
-      revealEls.forEach(el => {
-        revealObserver.observe(el);
-      });
-    } else {
-      // Fallback: immediately reveal all sections
-      revealEls.forEach(el => el.classList.add('active'));
-    }
-
-    // login button logic
-    const loginBtn = document.getElementById('loginBtn');
-    function updateLoginButton() {
-      const email = localStorage.getItem('ling_auth_email');
-      if (email) {
-        loginBtn.textContent = 'Dashboard';
-        loginBtn.onclick = function() {
-          window.location.href = 'dashboard.html';
-        };
-      } else {
-        loginBtn.textContent = 'Log in / Sign up';
-        loginBtn.onclick = function() {
-          window.location.href = 'login.html';
-        };
-      }
-    }
-    updateLoginButton();
-    window.addEventListener('storage', updateLoginButton);
-  </script>
+  <script src="auth.js"></script>
 </body>
 </html>
