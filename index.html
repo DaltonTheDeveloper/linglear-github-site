@@ -2,21 +2,26 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Linglear – Learn Languages with Real Shows</title>
+  <title>Linglear – Learn with Subtitles</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
   <style>
     :root {
-      --bg1: #020617;
-      --bg2: #02081f;
-      --accent: #22d3ee;
-      --accent-soft: rgba(34, 211, 238, 0.15);
-      --card-bg: rgba(15, 23, 42, 0.88);
-      --card-border: rgba(148, 163, 184, 0.35);
-      --text-main: #e5f2ff;
+      --bg-deep: #020616;
+      --bg-deep-2: #031326;
+      --card-bg: rgba(6, 22, 48, 0.9);
+      --accent: #53e0ff;
+      --accent-soft: rgba(83, 224, 255, 0.2);
+      --accent-strong: #3ad3ff;
+      --text-main: #f9fbff;
       --text-muted: #94a3b8;
-      --radius-lg: 22px;
-      --shadow-soft: 0 35px 120px rgba(15, 23, 42, 0.9);
+      --border-subtle: rgba(148, 163, 184, 0.2);
+      --shadow-soft: 0 40px 120px rgba(0, 0, 0, 0.8);
+      --radius-lg: 24px;
+      --radius-pill: 999px;
+      --nav-height: 72px;
     }
 
     * {
@@ -27,391 +32,477 @@
 
     body {
       min-height: 100vh;
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text",
-        "Segoe UI", sans-serif;
+      font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       color: var(--text-main);
       background:
-        radial-gradient(circle at 0% 0%, #1d4ed8 0, transparent 45%),
-        radial-gradient(circle at 100% 100%, #0f172a 0, transparent 55%),
-        radial-gradient(circle at 80% 20%, #0ea5e9 0, transparent 50%),
-        linear-gradient(135deg, #020617, #02081f 60%, #000000);
-      display: flex;
-      justify-content: center;
-      align-items: stretch;
-      padding: 30px 16px 40px;
+        radial-gradient(circle at 0% 0%, #0b3b8a 0, transparent 45%),
+        radial-gradient(circle at 100% 100%, #01283f 0, transparent 55%),
+        radial-gradient(circle at 110% -10%, #004f7a 0, transparent 60%),
+        var(--bg-deep);
+      background-attachment: fixed;
     }
 
-    .page {
-      width: 100%;
-      max-width: 1160px;
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    .page-shell {
+      max-width: 1120px;
       margin: 0 auto;
-      display: flex;
-      flex-direction: column;
-      gap: 32px;
+      padding: 24px 20px 80px;
     }
 
     /* NAVBAR */
+
     .nav {
+      height: var(--nav-height);
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 14px 24px;
-      border-radius: 999px;
-      background: radial-gradient(circle at 0 0, rgba(148, 163, 184, 0.35), transparent 60%),
-                  rgba(15, 23, 42, 0.92);
-      border: 1px solid rgba(148, 163, 184, 0.45);
-      box-shadow: 0 18px 60px rgba(15, 23, 42, 0.8);
-      backdrop-filter: blur(22px);
+      margin-bottom: 32px;
     }
 
     .nav-left {
       display: flex;
       align-items: center;
-      gap: 16px;
+      gap: 12px;
     }
 
-    .logo-pill {
-      width: 34px;
-      height: 34px;
-      border-radius: 999px;
-      background: radial-gradient(circle at 30% 0, #e0faff, transparent 60%),
-                  radial-gradient(circle at 70% 90%, #22d3ee, transparent 55%),
-                  #0f172a;
-      border: 1px solid rgba(148, 163, 184, 0.6);
+    .nav-logo-wrap {
+      width: 40px;
+      height: 40px;
+      border-radius: 16px;
+      background: radial-gradient(circle at 30% 0%, #57e6ff 0, transparent 60%),
+                  rgba(5, 21, 44, 0.95);
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 15px;
-      font-weight: 700;
-      color: #e0faff;
+      box-shadow: 0 0 35px rgba(83, 224, 255, 0.5);
     }
 
-    .brand-title {
-      font-weight: 650;
-      letter-spacing: 0.05em;
-      font-size: 17px;
+    .nav-logo-wrap img {
+      width: 26px;
+      height: 26px;
+      object-fit: contain;
+      filter: drop-shadow(0 0 12px rgba(83, 224, 255, 0.9));
+    }
+
+    .nav-title-block {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .brand-name {
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      font-size: 1.05rem;
     }
 
     .brand-sub {
-      font-size: 12px;
+      font-size: 0.75rem;
       color: var(--text-muted);
-    }
-
-    .nav-right {
-      display: flex;
-      align-items: center;
-      gap: 16px;
-      font-size: 13px;
     }
 
     .nav-links {
       display: flex;
-      gap: 12px;
+      align-items: center;
+      gap: 16px;
+      font-size: 0.9rem;
+      color: var(--text-muted);
     }
 
-    .nav-link {
-      color: var(--text-muted);
-      text-decoration: none;
+    .nav-links a.nav-link {
       padding: 6px 10px;
       border-radius: 999px;
       transition: color 0.15s ease, background 0.15s ease;
     }
 
-    .nav-link:hover {
-      color: #e5f2ff;
-      background: rgba(148, 163, 184, 0.1);
+    .nav-links a.nav-link:hover {
+      color: var(--text-main);
+      background: rgba(15, 23, 42, 0.7);
     }
 
-    .primary-btn {
-      border-radius: 999px;
-      padding: 8px 18px;
-      border: none;
-      cursor: pointer;
-      font-size: 13px;
+    .nav-login-btn {
+      padding: 9px 18px;
+      border-radius: var(--radius-pill);
+      border: 1px solid rgba(83, 224, 255, 0.5);
+      background: radial-gradient(circle at 20% 0%, rgba(121, 228, 255, 0.9) 0, rgba(0, 0, 0, 0) 55%),
+                  linear-gradient(135deg, #00a5c7, #0075ff);
+      color: #031017;
       font-weight: 600;
-      letter-spacing: 0.04em;
-      color: #0b1120;
-      background: radial-gradient(circle at 0 0, #e0faff, #7dd3fc 35%, #22d3ee 75%);
-      box-shadow: 0 0 0 1px rgba(15, 23, 42, 0.7),
-                  0 12px 30px rgba(56, 189, 248, 0.55);
-      white-space: nowrap;
-      text-decoration: none;
+      font-size: 0.9rem;
+      box-shadow: 0 20px 40px rgba(43, 186, 255, 0.55);
       display: inline-flex;
       align-items: center;
       gap: 6px;
+      cursor: pointer;
+      transition: transform 0.1s ease, box-shadow 0.1s ease, filter 0.1s ease;
     }
 
-    .primary-btn span {
-      font-size: 11px;
-      text-transform: uppercase;
+    .nav-login-btn:hover {
+      transform: translateY(-1px);
+      filter: brightness(1.05);
+      box-shadow: 0 26px 60px rgba(43, 186, 255, 0.75);
     }
 
-    .primary-btn:hover {
-      filter: brightness(1.08);
-      transform: translateY(-0.5px);
+    .nav-login-btn span.icon-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 999px;
+      background: #031017;
     }
 
     /* HERO */
+
     .hero {
       display: grid;
-      grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+      grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
       gap: 40px;
-      padding: 26px 30px 30px;
-      border-radius: 32px;
-      background: radial-gradient(circle at 0 0, rgba(37, 99, 235, 0.45), transparent 55%),
-                  radial-gradient(circle at 100% 100%, rgba(15, 23, 42, 0.9), #020617);
-      border: 1px solid rgba(148, 163, 184, 0.5);
-      box-shadow: var(--shadow-soft);
-      backdrop-filter: blur(26px);
+      align-items: center;
+      margin-top: 12px;
+      margin-bottom: 48px;
     }
 
-    .hero-main {
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      gap: 22px;
-    }
-
-    .tagline {
+    .hero-copy-eyebrow {
       display: inline-flex;
       align-items: center;
       gap: 8px;
-      padding: 6px 10px;
+      padding: 4px 10px;
       border-radius: 999px;
-      background: rgba(15, 23, 42, 0.8);
-      border: 1px solid rgba(148, 163, 184, 0.5);
-      font-size: 11px;
+      border: 1px solid rgba(148, 163, 184, 0.25);
+      font-size: 0.72rem;
       text-transform: uppercase;
       letter-spacing: 0.16em;
       color: var(--text-muted);
+      background: radial-gradient(circle at 0 0, rgba(83, 224, 255, 0.18) 0, transparent 55%),
+                  rgba(11, 26, 53, 0.8);
+      margin-bottom: 16px;
     }
 
-    .tagline-pill {
-      width: 7px;
-      height: 7px;
+    .hero-copy-eyebrow span.pill-dot {
+      width: 8px;
+      height: 8px;
       border-radius: 999px;
-      background: #22c55e;
-      box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.28);
+      background: var(--accent);
+      box-shadow: 0 0 12px rgba(83, 224, 255, 0.9);
     }
 
     .hero-title {
-      font-size: clamp(32px, 4vw, 40px);
-      line-height: 1.08;
-      letter-spacing: 0.02em;
+      font-size: clamp(2.3rem, 3.1vw + 1rem, 3rem);
+      font-weight: 700;
+      line-height: 1.15;
+      margin-bottom: 16px;
     }
 
-    .hero-highlight {
-      background: linear-gradient(120deg, #e0faff, #7dd3fc, #22d3ee);
+    .hero-title span.accent {
+      background: linear-gradient(135deg, #5bf0ff, #57b6ff);
       -webkit-background-clip: text;
       background-clip: text;
       color: transparent;
+      text-shadow: 0 0 32px rgba(83, 224, 255, 0.7);
     }
 
-    .hero-sub {
-      font-size: 14px;
-      line-height: 1.6;
+    .hero-subtitle {
       color: var(--text-muted);
-      max-width: 520px;
+      font-size: 0.98rem;
+      line-height: 1.6;
+      max-width: 34rem;
+      margin-bottom: 22px;
     }
 
-    .hero-cta-row {
+    .hero-badges {
       display: flex;
       flex-wrap: wrap;
-      gap: 14px;
+      gap: 10px;
+      margin-bottom: 22px;
+    }
+
+    .hero-badge {
+      padding: 6px 11px;
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.25);
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      background: rgba(7, 16, 35, 0.8);
+    }
+
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
       align-items: center;
     }
 
-    .secondary-btn {
-      border-radius: 999px;
-      padding: 8px 16px;
-      border: 1px solid rgba(148, 163, 184, 0.5);
-      background: rgba(15, 23, 42, 0.9);
-      color: var(--text-main);
-      font-size: 13px;
+    .btn-primary {
+      padding: 11px 22px;
+      border-radius: var(--radius-pill);
+      border: none;
+      background: radial-gradient(circle at 20% 0, rgba(121, 228, 255, 0.95) 0, rgba(0, 0, 0, 0) 60%),
+                  linear-gradient(130deg, #00a7cc, #0082ff);
+      color: #021219;
+      font-weight: 600;
+      font-size: 0.92rem;
+      box-shadow: 0 22px 60px rgba(27, 163, 255, 0.7);
       cursor: pointer;
-      text-decoration: none;
       display: inline-flex;
       align-items: center;
       gap: 8px;
+      transition: transform 0.1s ease, box-shadow 0.1s ease, filter 0.1s ease;
     }
 
-    .secondary-btn span {
-      font-size: 11px;
+    .btn-primary:hover {
+      transform: translateY(-1px);
+      filter: brightness(1.05);
+      box-shadow: 0 26px 90px rgba(27, 163, 255, 0.9);
+    }
+
+    .btn-ghost {
+      padding: 10px 18px;
+      border-radius: var(--radius-pill);
+      border: 1px solid rgba(148, 163, 184, 0.35);
+      background: rgba(5, 16, 35, 0.9);
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      transition: background 0.12s ease, border-color 0.12s ease, color 0.12s ease;
+    }
+
+    .btn-ghost:hover {
+      border-color: rgba(83, 224, 255, 0.7);
+      color: var(--text-main);
+      background: rgba(9, 21, 46, 0.98);
+    }
+
+    .tiny-caption {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-top: 12px;
+    }
+
+    /* HERO – LOGO SIDE */
+
+    .hero-visual {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .hero-glass {
+      position: relative;
+      width: 100%;
+      max-width: 380px;
+      border-radius: 32px;
+      padding: 26px 24px 22px;
+      background: radial-gradient(circle at 10% 0%, rgba(83, 224, 255, 0.28) 0, transparent 60%),
+                  radial-gradient(circle at 100% 100%, rgba(37, 99, 235, 0.25) 0, transparent 60%),
+                  rgba(4, 17, 37, 0.96);
+      box-shadow: var(--shadow-soft);
+      border: 1px solid rgba(148, 163, 184, 0.25);
+      overflow: hidden;
+    }
+
+    .hero-glass::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(140deg, rgba(83, 224, 255, 0.15), transparent 55%),
+        linear-gradient(320deg, rgba(56, 189, 248, 0.15), transparent 55%);
+      opacity: 0.9;
+      pointer-events: none;
+    }
+
+    .hero-glass-inner {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .hero-logo-aura {
+      width: 210px;
+      height: 210px;
+      border-radius: 50%;
+      background:
+        radial-gradient(circle at 50% 0%, rgba(83, 224, 255, 0.45) 0, transparent 60%),
+        radial-gradient(circle at 50% 50%, rgba(15, 118, 255, 0.45) 0, transparent 65%),
+        #020920;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow:
+        0 0 55px rgba(83, 224, 255, 0.75),
+        0 0 140px rgba(15, 118, 255, 0.5);
+    }
+
+    .hero-logo-aura img {
+      width: 72%;
+      height: 72%;
+      object-fit: contain;
+      filter: drop-shadow(0 0 30px rgba(83, 224, 255, 0.95));
+    }
+
+    .hero-glass-title {
+      font-size: 0.9rem;
       text-transform: uppercase;
       letter-spacing: 0.16em;
       color: var(--text-muted);
     }
 
-    .hero-footnote {
-      font-size: 11px;
-      color: var(--text-muted);
-      max-width: 440px;
+    .hero-glass-metric {
+      font-size: 1.7rem;
+      font-weight: 600;
+      margin-top: 4px;
     }
 
-    /* RIGHT HERO (demo + benefits) */
-    .hero-side {
-      display: flex;
-      flex-direction: column;
-      gap: 18px;
+    .hero-glass-metric span.accent {
+      color: var(--accent);
     }
 
-    .demo-card {
-      flex: 1;
-      border-radius: 24px;
-      background: radial-gradient(circle at 0 0, rgba(56, 189, 248, 0.35), transparent 55%),
-                  radial-gradient(circle at 100% 100%, rgba(15, 23, 42, 0.95), #020617);
-      border: 1px solid rgba(56, 189, 248, 0.55);
-      box-shadow: 0 20px 60px rgba(8, 47, 73, 0.9);
-      padding: 16px 16px 18px;
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-    }
-
-    .demo-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      font-size: 12px;
-    }
-
-    .demo-title {
-      font-weight: 500;
-    }
-
-    .demo-badge {
-      padding: 4px 9px;
-      border-radius: 999px;
-      background: rgba(15, 23, 42, 0.9);
-      border: 1px solid rgba(148, 163, 184, 0.5);
-      font-size: 10px;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-      color: var(--text-muted);
-    }
-
-    .demo-video {
-      flex: 1;
-      border-radius: 18px;
-      border: 1px solid rgba(15, 23, 42, 0.8);
-      background:
-        radial-gradient(circle at 0 0, rgba(248, 250, 252, 0.16), transparent 60%),
-        radial-gradient(circle at 100% 100%, rgba(30, 64, 175, 0.95), #020617);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      position: relative;
-      overflow: hidden;
-    }
-
-    .demo-play {
-      width: 58px;
-      height: 58px;
-      border-radius: 999px;
-      background: rgba(15, 23, 42, 0.85);
-      border: 1px solid rgba(248, 250, 252, 0.25);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      box-shadow: 0 12px 30px rgba(15, 23, 42, 0.85);
-    }
-
-    .demo-play::before {
-      content: "";
-      margin-left: 2px;
-      border-style: solid;
-      border-width: 9px 0 9px 15px;
-      border-color: transparent transparent transparent #e5f2ff;
-    }
-
-    .demo-caption {
-      font-size: 11px;
+    .hero-glass-note {
+      font-size: 0.78rem;
       color: var(--text-muted);
       text-align: center;
-      margin-top: 6px;
+      max-width: 260px;
     }
 
-    .benefit-grid {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 10px;
-      font-size: 11px;
-    }
-
-    .benefit {
-      border-radius: 16px;
-      padding: 9px 10px;
-      background: rgba(15, 23, 42, 0.85);
-      border: 1px solid rgba(30, 64, 175, 0.6);
-    }
-
-    .benefit-title {
-      font-size: 11px;
-      margin-bottom: 3px;
-    }
-
-    .benefit-text {
-      color: var(--text-muted);
-      line-height: 1.4;
-    }
-
-    /* SECTIONS BELOW HERO */
-    .section-grid {
-      margin-top: 6px;
-      display: grid;
-      grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
-      gap: 24px;
-    }
+    /* DEMO / SECTIONS */
 
     .section-card {
       border-radius: var(--radius-lg);
-      padding: 18px 20px 20px;
-      background: var(--card-bg);
-      border: 1px solid var(--card-border);
-      box-shadow: 0 18px 55px rgba(15, 23, 42, 0.85);
+      padding: 22px 22px 26px;
+      background: linear-gradient(135deg, rgba(15, 23, 42, 0.96), rgba(2, 6, 23, 0.98));
+      border: 1px solid var(--border-subtle);
+      box-shadow: 0 25px 70px rgba(0, 0, 0, 0.85);
+      margin-bottom: 24px;
+    }
+
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 16px;
+      margin-bottom: 14px;
     }
 
     .section-title {
-      font-size: 15px;
-      margin-bottom: 6px;
+      font-size: 1rem;
+      font-weight: 500;
     }
 
-    .section-text {
-      font-size: 13px;
-      line-height: 1.6;
+    .section-sub {
+      font-size: 0.8rem;
       color: var(--text-muted);
     }
 
-    .bullet-list {
-      margin-top: 10px;
-      padding-left: 18px;
-      font-size: 13px;
+    .demo-layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+      gap: 20px;
+      align-items: stretch;
+    }
+
+    .demo-video-shell {
+      border-radius: 18px;
+      background: radial-gradient(circle at 0 0, rgba(83, 224, 255, 0.18) 0, transparent 55%),
+                  rgba(8, 18, 40, 0.95);
+      border: 1px dashed rgba(148, 163, 184, 0.5);
       color: var(--text-muted);
+      font-size: 0.86rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 22px;
+    }
+
+    .demo-placeholder-label {
+      font-weight: 500;
+      color: var(--accent);
+      margin-bottom: 4px;
+    }
+
+    .feature-list {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+      font-size: 0.86rem;
+    }
+
+    .feature-chip {
+      border-radius: 16px;
+      padding: 10px 11px;
+      background: rgba(6, 16, 35, 0.95);
+      border: 1px solid rgba(148, 163, 184, 0.3);
+    }
+
+    .feature-chip-title {
+      font-weight: 500;
+      font-size: 0.86rem;
+      margin-bottom: 4px;
+    }
+
+    .feature-chip-body {
+      color: var(--text-muted);
+      font-size: 0.8rem;
       line-height: 1.5;
     }
 
-    .feature-badges {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 6px;
-      margin-top: 10px;
+    /* BENEFITS GRID */
+
+    .benefits-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 18px;
+      font-size: 0.85rem;
     }
 
-    .feature-pill {
-      font-size: 11px;
-      padding: 4px 8px;
-      border-radius: 999px;
-      background: rgba(15, 23, 42, 0.9);
-      border: 1px solid rgba(148, 163, 184, 0.45);
+    .benefit-card {
+      border-radius: 18px;
+      padding: 14px 14px 16px;
+      background: radial-gradient(circle at 0 0, rgba(83, 224, 255, 0.12) 0, transparent 55%),
+                  rgba(6, 16, 35, 0.96);
+      border: 1px solid rgba(148, 163, 184, 0.36);
+    }
+
+    .benefit-eyebrow {
+      font-size: 0.68rem;
+      text-transform: uppercase;
+      letter-spacing: 0.16em;
+      color: var(--accent);
+      margin-bottom: 6px;
+    }
+
+    .benefit-title {
+      font-weight: 500;
+      margin-bottom: 6px;
+    }
+
+    .benefit-copy {
       color: var(--text-muted);
+      line-height: 1.5;
+      font-size: 0.8rem;
     }
 
     /* FOOTER */
+
     .footer {
-      margin-top: 10px;
-      font-size: 11px;
+      margin-top: 32px;
+      padding-top: 12px;
+      border-top: 1px solid rgba(15, 23, 42, 0.9);
+      font-size: 0.75rem;
       color: var(--text-muted);
-      text-align: center;
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
     }
 
     .footer a {
@@ -423,183 +514,251 @@
       text-decoration: underline;
     }
 
+    /* RESPONSIVE */
+
     @media (max-width: 900px) {
-      body {
-        padding: 18px 12px 30px;
-      }
-
-      .nav {
-        border-radius: 20px;
-      }
-
       .hero {
         grid-template-columns: minmax(0, 1fr);
-        padding: 22px 18px 20px;
       }
-
-      .hero-side {
+      .hero-visual {
         order: -1;
       }
+      .page-shell {
+        padding-top: 18px;
+      }
+    }
 
-      .section-grid {
+    @media (max-width: 720px) {
+      .benefits-grid {
         grid-template-columns: minmax(0, 1fr);
+      }
+      .demo-layout {
+        grid-template-columns: minmax(0, 1fr);
+      }
+      .feature-list {
+        grid-template-columns: minmax(0, 1fr);
+      }
+      .nav-links {
+        display: none;
+      }
+      .hero-glass {
+        max-width: 320px;
       }
     }
   </style>
 </head>
 <body>
-  <div class="page">
-    <!-- NAVBAR -->
+  <div class="page-shell">
+    <!-- NAV -->
     <header class="nav">
       <div class="nav-left">
-        <div class="logo-pill">L</div>
-        <div>
-          <div class="brand-title">Linglear</div>
-          <div class="brand-sub">Subtitles that actually teach you.</div>
+        <div class="nav-logo-wrap">
+          <!-- Put fox-logo-glow.png in the same folder -->
+          <img src="fox-logo-glow.png" alt="Linglear fox logo" />
+        </div>
+        <div class="nav-title-block">
+          <div class="brand-name">Linglear</div>
+          <div class="brand-sub">Bilingual subtitles for serious learners</div>
         </div>
       </div>
 
-      <div class="nav-right">
-        <nav class="nav-links">
-          <a href="#how-it-works" class="nav-link">How it works</a>
-          <a href="#features" class="nav-link">Features</a>
-          <a href="#demo" class="nav-link">Demo</a>
-        </nav>
-        <!-- This is the login button that goes to your *existing* login.html -->
-        <a href="login.html" class="primary-btn">
-          <span>Log in / Sign up</span>
+      <div class="nav-links">
+        <a href="#demo" class="nav-link">Demo</a>
+        <a href="#benefits" class="nav-link">Why Linglear</a>
+        <a href="#how" class="nav-link">How it works</a>
+        <a href="members.html" class="nav-link">Members</a>
+        <a href="login.html" class="nav-login-btn">
+          Log in / Sign up
+          <span class="icon-dot"></span>
         </a>
       </div>
     </header>
 
     <!-- HERO -->
-    <main class="hero">
-      <section class="hero-main">
-        <div class="tagline">
-          <div class="tagline-pill"></div>
-          LIVE ALPHA · MEMBERS-ONLY TOOLS
-        </div>
-
-        <h1 class="hero-title">
-          Learn a language from the
-          <span class="hero-highlight">shows you already love.</span>
-        </h1>
-
-        <p class="hero-sub">
-          Linglear turns Netflix subtitles into an interactive tutor:
-          hover for word-by-word translations, auto-pause for review, and
-          save vocabulary straight into your personal SRS deck.
-          All without leaving the episode.
-        </p>
-
-        <div class="hero-cta-row">
-          <a href="login.html" class="primary-btn">
-            <span>Start free preview</span>
-          </a>
-
-          <a href="members.html" class="secondary-btn">
-            Members area
-            <span>alpha preview</span>
-          </a>
-        </div>
-
-        <p class="hero-footnote">
-          This is a login demo. The full subtitle dashboard, library, and SRS
-          trainer will live in the members-only area once everything is wired up.
-        </p>
-      </section>
-
-      <!-- Right side: demo card + quick benefits -->
-      <aside class="hero-side" id="demo">
-        <div class="demo-card">
-          <div class="demo-header">
-            <span class="demo-title">Demo: Interactive subtitle overlay</span>
-            <span class="demo-badge">Video preview</span>
+    <main>
+      <section class="hero">
+        <div>
+          <div class="hero-copy-eyebrow">
+            <span class="pill-dot"></span>
+            Ultra-focused language immersion
           </div>
-
-          <div class="demo-video">
-            <!-- Placeholder – replace with real <video> or <iframe> later -->
-            <div class="demo-play"></div>
+          <h1 class="hero-title">
+            Turn every episode into a <span class="accent">personal tutor.</span>
+          </h1>
+          <p class="hero-subtitle">
+            Linglear overlays smart bilingual subtitles on top of Netflix so you can pause, hover, and
+            actually <strong>train your brain</strong> instead of just reading along. Built for serious learners,
+            but friendly enough for a late-night binge.
+          </p>
+          <div class="hero-badges">
+            <div class="hero-badge">Word-by-word hover translations</div>
+            <div class="hero-badge">Sentence-level explanations</div>
+            <div class="hero-badge">SRS-ready vocabulary exports</div>
           </div>
-          <p class="demo-caption">
-            Lorem ipsum dolor sit amet, consectetur adipiscing elit.
-            Replace this with a real walkthrough video of Linglear in action.
+          <div class="hero-actions">
+            <a href="login.html" class="btn-primary">
+              Start secure login
+              <span>→</span>
+            </a>
+            <a href="#demo" class="btn-ghost">
+              Watch 90-second demo
+              <span>▶</span>
+            </a>
+          </div>
+          <p class="tiny-caption">
+            No credit card required for early access. Members-only tools live behind a secure Cognito login.
           </p>
         </div>
 
-        <div class="benefit-grid">
-          <div class="benefit">
-            <div class="benefit-title">Real-time dual subtitles</div>
-            <div class="benefit-text">
-              Lorem ipsum dolor sit amet, consectetur adipiscing elit,
-              sed do eiusmod tempor.
-            </div>
-          </div>
-          <div class="benefit">
-            <div class="benefit-title">Smart vocab harvesting</div>
-            <div class="benefit-text">
-              Ut enim ad minim veniam, quis nostrud exercitation ullamco
-              laboris nisi ut aliquip ex ea.
-            </div>
-          </div>
-          <div class="benefit">
-            <div class="benefit-title">SRS-ready card exports</div>
-            <div class="benefit-text">
-              Duis aute irure dolor in reprehenderit in voluptate velit
-              esse cillum dolore.
-            </div>
-          </div>
-          <div class="benefit">
-            <div class="benefit-title">Works with your shows</div>
-            <div class="benefit-text">
-              Excepteur sint occaecat cupidatat non proident, sunt in culpa
-              qui officia deserunt mollit anim.
+        <div class="hero-visual">
+          <div class="hero-glass">
+            <div class="hero-glass-inner">
+              <div class="hero-logo-aura">
+                <img src="fox-logo-glow.png" alt="Linglear fox icon" />
+              </div>
+              <div class="hero-glass-title">Tonight’s training session</div>
+              <div class="hero-glass-metric">
+                <span class="accent">24</span> new words • 3 episodes
+              </div>
+              <p class="hero-glass-note">
+                Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nunc cursus, lectus non faucibus lobortis,
+                libero arcu laoreet mi, vitae iaculis felis mi nec lacus.
+              </p>
             </div>
           </div>
         </div>
-      </aside>
+      </section>
+
+      <!-- DEMO SECTION -->
+      <section id="demo" class="section-card">
+        <div class="section-header">
+          <h2 class="section-title">Demo walkthrough</h2>
+          <p class="section-sub">
+            This is where your embedded video will go once you record it.
+          </p>
+        </div>
+        <div class="demo-layout">
+          <div class="demo-video-shell">
+            <div>
+              <div class="demo-placeholder-label">Demo video placeholder</div>
+              <p>
+                Embed a YouTube, Loom, or custom video here that shows how Linglear overlays bilingual subtitles
+                on top of Netflix and tracks vocabulary in real time.
+              </p>
+            </div>
+          </div>
+          <div class="feature-list">
+            <div class="feature-chip">
+              <div class="feature-chip-title">Hover-to-translate</div>
+              <div class="feature-chip-body">
+                Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed non urna sed sapien laoreet blandit.
+              </div>
+            </div>
+            <div class="feature-chip">
+              <div class="feature-chip-title">Sentence insights</div>
+              <div class="feature-chip-body">
+                Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia curae.
+              </div>
+            </div>
+            <div class="feature-chip">
+              <div class="feature-chip-title">One-click SRS export</div>
+              <div class="feature-chip-body">
+                Maecenas a nulla eget metus ultrices viverra. Cras at convallis libero, ac hendrerit ipsum.
+              </div>
+            </div>
+            <div class="feature-chip">
+              <div class="feature-chip-title">Progress analytics</div>
+              <div class="feature-chip-body">
+                Quisque luctus, velit non aliquet sollicitudin, urna mi dictum justo, ac feugiat risus nisi ut arcu.
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- BENEFITS SECTION -->
+      <section id="benefits" class="section-card">
+        <div class="section-header">
+          <h2 class="section-title">Built for real learners, not just subtitles.</h2>
+          <p class="section-sub">
+            A few example benefits you can later replace with your real copy.
+          </p>
+        </div>
+        <div class="benefits-grid">
+          <div class="benefit-card">
+            <div class="benefit-eyebrow">Comprehensible input</div>
+            <div class="benefit-title">See translations only when you need them.</div>
+            <p class="benefit-copy">
+              Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer gravida lacus eget ultricies
+              vulputate. Suspendisse id dui volutpat, pulvinar augue id, faucibus augue.
+            </p>
+          </div>
+          <div class="benefit-card">
+            <div class="benefit-eyebrow">Vocabulary growth</div>
+            <div class="benefit-title">Turn every episode into flashcards.</div>
+            <p class="benefit-copy">
+              Aliquam erat volutpat. Etiam sodales neque nec tellus consequat, vitae ullamcorper massa luctus.
+              Curabitur maximus tincidunt fermentum.
+            </p>
+          </div>
+          <div class="benefit-card">
+            <div class="benefit-eyebrow">Consistent practice</div>
+            <div class="benefit-title">Daily streaks that actually matter.</div>
+            <p class="benefit-copy">
+              Pellentesque habitant morbi tristique senectus et netus et malesuada fames ac turpis egestas.
+              Vestibulum eget mattis purus, at tempor ante.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <!-- HOW IT WORKS SECTION -->
+      <section id="how" class="section-card">
+        <div class="section-header">
+          <h2 class="section-title">How Linglear fits into your flow.</h2>
+          <p class="section-sub">
+            Rough outline you can refine later with real technical details.
+          </p>
+        </div>
+        <div class="benefits-grid">
+          <div class="benefit-card">
+            <div class="benefit-eyebrow">Step 1</div>
+            <div class="benefit-title">Log in securely via Cognito + Google.</div>
+            <p class="benefit-copy">
+              Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nulla facilisi. Quisque feugiat vitae urna
+              non luctus.
+            </p>
+          </div>
+          <div class="benefit-card">
+            <div class="benefit-eyebrow">Step 2</div>
+            <div class="benefit-title">Open Netflix and let the extension detect your show.</div>
+            <p class="benefit-copy">
+              Sed nec molestie risus. Vivamus eleifend, lacus in posuere cursus, ex erat bibendum risus, non
+              luctus quam lorem ut eros.
+            </p>
+          </div>
+          <div class="benefit-card">
+            <div class="benefit-eyebrow">Step 3</div>
+            <div class="benefit-title">Train, save words, and sync with your SRS.</div>
+            <p class="benefit-copy">
+              Integer euismod lectus vitae magna mollis tempus. Donec ac sem sit amet magna consequat luctus.
+            </p>
+          </div>
+        </div>
+      </section>
     </main>
 
-    <!-- LOWER SECTIONS -->
-    <section class="section-grid" id="how-it-works">
-      <article class="section-card">
-        <h2 class="section-title">How Linglear works</h2>
-        <p class="section-text">
-          Lorem ipsum dolor sit amet, consectetur adipiscing elit. Vivamus
-          placerat arcu non libero fermentum, at dictum ipsum mattis.
-          Pellentesque ullamcorper, lorem at consequat sagittis, mi ipsum
-          ultrices est, non faucibus orci felis non sem.
-        </p>
-        <ul class="bullet-list">
-          <li>Step 1 – Install the browser extension and open Netflix.</li>
-          <li>Step 2 – Linglear detects subtitles and builds a learning layer.</li>
-          <li>Step 3 – Hover, pause, and save words while you watch.</li>
-          <li>Step 4 – Review everything in your members-only dashboard.</li>
-        </ul>
-      </article>
-
-      <article class="section-card" id="features">
-        <h2 class="section-title">Built for serious language learners</h2>
-        <p class="section-text">
-          Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed
-          vehicula, sem in faucibus convallis, tortor justo interdum tortor,
-          at tempor leo nisi a mi.
-        </p>
-        <div class="feature-badges">
-          <span class="feature-pill">Hover translations</span>
-          <span class="feature-pill">Context-aware examples</span>
-          <span class="feature-pill">Difficulty tagging</span>
-          <span class="feature-pill">Export to SRS / Anki</span>
-          <span class="feature-pill">Per-episode progress</span>
-          <span class="feature-pill">Crowd-voted corrections</span>
-        </div>
-      </article>
-    </section>
-
+    <!-- FOOTER -->
     <footer class="footer">
-      Want to log in? Use the button in the top-right or
-      <a href="login.html">go directly to the login page</a>.
+      <span>© <span id="year"></span> Linglear. All rights reserved.</span>
+      <span>
+        Members: <a href="members.html">open members area →</a>
+      </span>
     </footer>
   </div>
+
+  <script>
+    document.getElementById("year").textContent = new Date().getFullYear();
+  </script>
 </body>
 </html>

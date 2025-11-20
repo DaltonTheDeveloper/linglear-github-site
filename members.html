@@ -4,415 +4,389 @@
   <meta charset="UTF-8" />
   <title>Linglear – Members Area</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
   <style>
-    /* Reuse the same theme variables & base styles */
     :root {
-      --bg-start: #0a1d52;
-      --bg-end: #02101f;
-      --card-bg: rgba(9, 24, 55, 0.92);
-      --card-border: rgba(255, 255, 255, 0.08);
-      --text-main: #e9f1ff;
-      --text-muted: #9ba9c9;
-      --accent: #22c1ff;
-      --accent-soft: rgba(34, 193, 255, 0.18);
-      --success: #30d27b;
-      --radius-xl: 24px;
-      --shadow-soft: 0 30px 80px rgba(0, 0, 0, 0.55);
-      --font-main: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
-        sans-serif;
+      --bg-deep: #020616;
+      --bg-deep-2: #031326;
+      --card-bg: rgba(6, 22, 48, 0.92);
+      --accent: #53e0ff;
+      --accent-soft: rgba(83, 224, 255, 0.22);
+      --accent-strong: #3ad3ff;
+      --text-main: #f9fbff;
+      --text-muted: #9ca3af;
+      --border-subtle: rgba(148, 163, 184, 0.26);
+      --radius-lg: 22px;
+      --radius-pill: 999px;
     }
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
     body {
       min-height: 100vh;
-      font-family: var(--font-main);
-      background: radial-gradient(circle at 0% 0%, #1f4fff 0%, var(--bg-end) 55%),
-                  radial-gradient(circle at 80% 100%, #0c7ec7 0%, var(--bg-end) 55%);
+      font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       color: var(--text-main);
+      background:
+        radial-gradient(circle at 0% 0%, #0b3b8a 0, transparent 45%),
+        radial-gradient(circle at 100% 100%, #01283f 0, transparent 55%),
+        var(--bg-deep);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 32px 16px;
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    .members-shell {
+      width: 100%;
+      max-width: 920px;
+      border-radius: 28px;
+      padding: 26px 26px 22px;
+      background:
+        radial-gradient(circle at 0 0, rgba(83, 224, 255, 0.12) 0, transparent 55%),
+        radial-gradient(circle at 100% 100%, rgba(56, 189, 248, 0.12) 0, transparent 60%),
+        rgba(5, 18, 39, 0.98);
+      border: 1px solid var(--border-subtle);
+      box-shadow: 0 40px 120px rgba(0, 0, 0, 0.9);
+      display: grid;
+      grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
+      gap: 28px;
+    }
+
+    .members-main {
       display: flex;
       flex-direction: column;
-    }
-    a { color: inherit; text-decoration: none; }
-
-    .page-shell {
-      max-width: 1180px;
-      margin: 0 auto;
-      padding: 28px 20px 60px;
+      gap: 12px;
     }
 
-    .site-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 32px;
-    }
-    .logo-wordmark {
-      font-size: 22px;
-      font-weight: 700;
-      letter-spacing: 0.04em;
-    }
-    .logo-sub {
-      font-size: 12px;
-      color: var(--text-muted);
-      margin-top: 2px;
-    }
-    .header-right {
-      display: flex;
-      align-items: center;
-      gap: 18px;
-    }
-    .btn-primary, .btn-secondary {
-      border-radius: 999px;
-      border: none;
-      cursor: pointer;
-      font-size: 13px;
-      font-weight: 500;
-      white-space: nowrap;
-    }
-    .btn-primary {
-      padding: 8px 18px;
-      background: radial-gradient(circle at 0% 0%, #ffffff 0%, #58e1ff 15%, #008bff 60%, #0066ff 100%);
-      color: #021220;
-      box-shadow: 0 12px 30px rgba(0, 140, 255, 0.6);
-    }
-    .btn-secondary {
-      padding: 6px 14px;
-      background: rgba(8, 22, 54, 0.85);
-      color: var(--text-muted);
-      border: 1px solid rgba(255, 255, 255, 0.2);
-    }
-    .btn-secondary:hover {
-      background: rgba(16, 38, 88, 0.95);
-      color: var(--text-main);
-    }
-    .auth-status-text {
-      max-width: 260px;
-      text-align: right;
-      font-size: 11px;
-      color: var(--text-muted);
-    }
-    .auth-email {
-      display: block;
-      color: #ffffff;
-      font-weight: 500;
-    }
-
-    .main-card {
-      padding: 26px 26px 30px;
-      border-radius: var(--radius-xl);
-      background: linear-gradient(135deg, rgba(7, 26, 68, 0.96), rgba(3, 10, 30, 0.98));
-      border: 1px solid var(--card-border);
-      box-shadow: var(--shadow-soft);
-      backdrop-filter: blur(22px);
-    }
-    .main-title {
-      font-size: 22px;
-      margin-bottom: 4px;
-    }
-    .main-subtitle {
-      font-size: 13px;
-      color: var(--text-muted);
-      margin-bottom: 20px;
-    }
-    .member-pill {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      padding: 4px 10px;
-      border-radius: 999px;
-      background: rgba(3, 20, 28, 0.9);
-      border: 1px solid rgba(48, 210, 123, 0.7);
-      font-size: 11px;
+    .members-eyebrow {
+      font-size: 0.72rem;
       text-transform: uppercase;
       letter-spacing: 0.16em;
-      color: var(--success);
-      margin-bottom: 10px;
+      color: var(--accent);
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
     }
-    .member-dot {
+
+    .members-eyebrow span.dot {
       width: 8px;
       height: 8px;
       border-radius: 999px;
-      background: radial-gradient(circle at 0% 0%, #ffffff 0, #53f08c 45%, #0fbf5a 100%);
+      background: var(--accent);
+      box-shadow: 0 0 12px rgba(83, 224, 255, 0.9);
     }
 
-    .members-layout {
-      display: grid;
-      grid-template-columns: 1.3fr 1fr;
-      gap: 24px;
+    .members-title {
+      font-size: 1.8rem;
+      font-weight: 600;
+      margin-top: 4px;
+    }
+
+    .members-subtitle {
+      font-size: 0.95rem;
+      color: var(--text-muted);
+      max-width: 34rem;
+      line-height: 1.6;
+    }
+
+    .members-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 10px;
+      border-radius: var(--radius-pill);
+      border: 1px solid rgba(148, 163, 184, 0.35);
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      background: rgba(6, 16, 35, 0.96);
+      margin-top: 4px;
+    }
+
+    .email-highlight {
+      color: var(--accent);
+      font-weight: 500;
+    }
+
+    .members-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
       margin-top: 14px;
     }
-    @media (max-width: 900px) {
-      .members-layout {
-        grid-template-columns: minmax(0, 1fr);
-      }
+
+    .btn-primary {
+      padding: 9px 18px;
+      border-radius: var(--radius-pill);
+      border: none;
+      background: radial-gradient(circle at 20% 0, rgba(121, 228, 255, 0.95) 0, rgba(0, 0, 0, 0) 60%),
+                  linear-gradient(130deg, #00a7cc, #0082ff);
+      color: #021219;
+      font-weight: 600;
+      font-size: 0.9rem;
+      box-shadow: 0 18px 48px rgba(27, 163, 255, 0.7);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: transform 0.1s ease, box-shadow 0.1s ease, filter 0.1s ease;
     }
 
-    .column {
-      font-size: 13px;
+    .btn-primary:hover {
+      transform: translateY(-1px);
+      filter: brightness(1.05);
+      box-shadow: 0 22px 70px rgba(27, 163, 255, 0.9);
+    }
+
+    .btn-ghost {
+      padding: 8px 16px;
+      border-radius: var(--radius-pill);
+      border: 1px solid rgba(148, 163, 184, 0.4);
+      background: rgba(3, 14, 32, 0.96);
       color: var(--text-muted);
-      line-height: 1.7;
-    }
-    .column h3 {
-      font-size: 14px;
-      color: var(--text-main);
-      margin-bottom: 8px;
+      font-size: 0.86rem;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      transition: background 0.12s ease, border-color 0.12s ease, color 0.12s ease;
     }
 
-    .tool-grid {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 14px;
+    .btn-ghost:hover {
+      background: rgba(9, 21, 46, 0.98);
+      border-color: rgba(83, 224, 255, 0.7);
+      color: var(--text-main);
+    }
+
+    .members-note {
       margin-top: 10px;
-    }
-    @media (max-width: 700px) {
-      .tool-grid {
-        grid-template-columns: minmax(0, 1fr);
-      }
+      font-size: 0.8rem;
+      color: var(--text-muted);
     }
 
-    .tool-card {
-      padding: 12px 14px 14px;
-      border-radius: 14px;
-      background: rgba(4, 16, 44, 0.96);
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      font-size: 12px;
+    /* RIGHT SIDE – FOX CARD */
+
+    .members-side {
+      border-radius: 22px;
+      padding: 18px 16px 16px;
+      background:
+        radial-gradient(circle at 0 0, rgba(83, 224, 255, 0.16) 0, transparent 55%),
+        rgba(3, 11, 26, 0.98);
+      border: 1px solid rgba(148, 163, 184, 0.4);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      align-items: center;
+      text-align: center;
     }
-    .tool-card h4 {
-      font-size: 13px;
-      margin-bottom: 4px;
-      color: var(--text-main);
+
+    .side-logo-aura {
+      width: 160px;
+      height: 160px;
+      border-radius: 50%;
+      background:
+        radial-gradient(circle at 50% 0%, rgba(83, 224, 255, 0.45) 0, transparent 58%),
+        radial-gradient(circle at 50% 60%, rgba(37, 99, 235, 0.42) 0, transparent 60%),
+        #020920;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 55px rgba(83, 224, 255, 0.7);
     }
-    .tool-badge {
-      display: inline-block;
-      padding: 0 6px;
-      border-radius: 999px;
-      font-size: 10px;
+
+    .side-logo-aura img {
+      width: 70%;
+      height: 70%;
+      object-fit: contain;
+      filter: drop-shadow(0 0 26px rgba(83, 224, 255, 0.95));
+    }
+
+    .side-title {
+      font-size: 0.9rem;
       text-transform: uppercase;
       letter-spacing: 0.16em;
-      background: rgba(20, 81, 186, 0.5);
-      color: #c2dbff;
-      margin-bottom: 3px;
+      color: var(--text-muted);
     }
 
-    .guard-card {
-      padding: 26px 24px 24px;
-      border-radius: var(--radius-xl);
-      background: rgba(7, 20, 40, 0.96);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      box-shadow: var(--shadow-soft);
-      max-width: 520px;
+    .side-stat {
+      font-size: 1.1rem;
+      font-weight: 500;
+      margin-top: 2px;
     }
-    .guard-title {
-      font-size: 18px;
-      margin-bottom: 8px;
-    }
-    .guard-text {
-      font-size: 13px;
-      color: var(--text-muted);
-      margin-bottom: 14px;
-    }
-    footer {
-      margin-top: 40px;
-      padding-top: 16px;
-      border-top: 1px solid rgba(255, 255, 255, 0.06);
-      font-size: 11px;
-      color: var(--text-muted);
+
+    .side-pill-row {
       display: flex;
-      justify-content: space-between;
-      gap: 10px;
       flex-wrap: wrap;
+      justify-content: center;
+      gap: 8px;
+      margin-top: 8px;
+      font-size: 0.78rem;
     }
-    .hidden { display: none !important; }
+
+    .side-pill {
+      padding: 5px 10px;
+      border-radius: var(--radius-pill);
+      border: 1px solid rgba(148, 163, 184, 0.4);
+      background: rgba(2, 10, 24, 0.96);
+      color: var(--text-muted);
+    }
+
+    .side-footer {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-top: 6px;
+    }
+
+    /* LOGGED-OUT STATE */
+
+    .logged-out {
+      text-align: center;
+    }
+
+    .logged-out .members-title {
+      font-size: 1.6rem;
+    }
+
+    .logged-out .members-actions {
+      justify-content: center;
+    }
+
+    @media (max-width: 800px) {
+      .members-shell {
+        grid-template-columns: minmax(0, 1fr);
+        padding: 22px 20px 20px;
+      }
+    }
+
+    @media (max-width: 520px) {
+      body {
+        padding: 20px 10px;
+      }
+    }
   </style>
 </head>
 <body>
-  <div class="page-shell">
-    <header class="site-header">
-      <div>
-        <div class="logo-wordmark">Linglear</div>
-        <div class="logo-sub">Members-only subtitle tools (demo)</div>
+  <div class="members-shell" id="membersShell">
+    <div class="members-main">
+      <div class="members-eyebrow">
+        <span class="dot"></span>
+        Members only
       </div>
-
-      <div class="header-right">
-        <div class="auth-status-text" id="authStatusText">
-          Checking login…
-        </div>
-        <button id="backHomeBtn" class="btn-secondary">Back to landing</button>
-        <button id="logoutBtn" class="btn-primary hidden">Log out</button>
-      </div>
-    </header>
-
-    <!-- Guard shown if NOT logged in -->
-    <div id="guard" class="guard-card hidden">
-      <h2 class="guard-title">Log in to access the members area.</h2>
-      <p class="guard-text">
-        This page is meant to be used only after a successful Cognito / Google
-        login. We couldn't find an active session for you.
+      <h1 class="members-title" id="membersTitle">
+        Welcome back, <span id="membersName">linglear member</span>.
+      </h1>
+      <p class="members-subtitle" id="membersSubtitle">
+        You are now authenticated via Cognito. This page will eventually hold your subtitle library, training
+        stats, and quick links into the Netflix overlay tools.
       </p>
-      <button id="goLoginBtn" class="btn-primary">Go to login / landing page</button>
+      <div class="members-pill" id="membersEmailPill">
+        Logged in as <span class="email-highlight" id="membersEmailLabel">you@example.com</span>
+      </div>
+      <div class="members-actions" id="membersActions">
+        <button class="btn-primary" onclick="goToLibrary()">
+          Open subtitle library
+          <span>→</span>
+        </button>
+        <a href="index.html" class="btn-ghost">
+          Back to landing
+        </a>
+        <button class="btn-ghost" onclick="logout()">
+          Log out
+        </button>
+      </div>
+      <p class="members-note" id="membersNote">
+        Lorem ipsum dolor sit amet, consectetur adipiscing elit. Ut cursus, enim in lobortis pharetra, lacus
+        tellus gravida arcu, nec porttitor nibh turpis non nunc.
+      </p>
     </div>
 
-    <!-- Main members content -->
-    <main id="membersContent" class="main-card hidden">
-      <div class="member-pill">
-        <span class="member-dot"></span>
-        <span>Members only</span>
+    <aside class="members-side">
+      <div class="side-logo-aura">
+        <!-- Re-use the same fox logo -->
+        <img src="fox-logo-glow.png" alt="Linglear fox logo" />
       </div>
-      <h1 class="main-title">Welcome back, <span id="memberName">member</span>.</h1>
-      <p class="main-subtitle">
-        This is a placeholder members dashboard. Each block below can later link
-        to your real subtitle tools, Stripe-protected features, and library UI.
-      </p>
-
-      <div class="members-layout">
-        <section class="column">
-          <h3>Your subtitle learning hub</h3>
-          <p>
-            Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer
-            tristique libero at auctor fermentum. Suspendisse potenti.
-          </p>
-          <p>
-            Nulla facilisi. Vestibulum ante ipsum primis in faucibus orci luctus
-            et ultrices posuere cubilia curae; Morbi sed felis eu arcu dapibus
-            lobortis.
-          </p>
-
-          <div class="tool-grid">
-            <article class="tool-card">
-              <div class="tool-badge">Library</div>
-              <h4>Subtitle Library</h4>
-              <p>
-                Browse all episodes you've imported. Later this will be wired to
-                your database and Stripe subscriptions.
-              </p>
-            </article>
-            <article class="tool-card">
-              <div class="tool-badge">Upload</div>
-              <h4>Upload new subtitles</h4>
-              <p>
-                Drop in new Netflix XML files to convert into bilingual study
-                formats and flashcards.
-              </p>
-            </article>
-            <article class="tool-card">
-              <div class="tool-badge">Review</div>
-              <h4>Daily review deck</h4>
-              <p>
-                A consolidated card view of words you've flagged across shows.
-              </p>
-            </article>
-            <article class="tool-card">
-              <div class="tool-badge">Settings</div>
-              <h4>Account & subscription</h4>
-              <p>
-                Future link to your Stripe billing portal and language settings.
-              </p>
-            </article>
-          </div>
-        </section>
-
-        <section class="column">
-          <h3>What’s actually locked behind login?</h3>
-          <p>
-            All heavy lifting—subtitle parsing, translation, vocabulary storage,
-            and payment-gated features—will live behind this page. Public visitors
-            will only see the landing page and a few marketing sections.
-          </p>
-          <p>
-            As you hook in Stripe, you can:
-          </p>
-          <ul style="margin-top:8px; padding-left:18px;">
-            <li>Verify active subscription before showing certain tools.</li>
-            <li>Show a “Upgrade to access” state for locked items.</li>
-            <li>Keep your API keys and translator endpoints private.</li>
-          </ul>
-        </section>
+      <div class="side-title">Tonight’s progress snapshot</div>
+      <div class="side-stat">
+        <span id="wordsCount">18</span> new words • <span id="episodesCount">2</span> episodes
       </div>
-    </main>
-
-    <footer>
-      <div>© <span id="year"></span> Linglear – Members area demo.</div>
-      <div>Login & session powered by AWS Cognito Hosted UI.</div>
-    </footer>
+      <div class="side-pill-row">
+        <div class="side-pill">Hover translations enabled</div>
+        <div class="side-pill">Netflix connected</div>
+        <div class="side-pill">SRS sync: pending</div>
+      </div>
+      <div class="side-footer">
+        Placeholder stats for now — wire this up to your real backend once it’s ready.
+      </div>
+    </aside>
   </div>
 
   <script>
-    const COGNITO_DOMAIN = "https://linglear-auth-1.auth.us-east-1.amazoncognito.com";
-    const CLIENT_ID = "6lsk8r1jbfs2g0619pb6a01t9q";
-    const LOGOUT_URI = "https://linglear.com/";
-    const STORAGE_KEY = "linglear_cognito_tokens";
+    // Simple front-end "auth" check using localStorage like your existing login page
+    const email = localStorage.getItem("ling_auth_email");
 
-    function buildLogoutUrl() {
-      const params = new URLSearchParams({
-        client_id: CLIENT_ID,
-        logout_uri: LOGOUT_URI
-      });
-      return `${COGNITO_DOMAIN}/logout?${params.toString()}`;
+    const titleEl = document.getElementById("membersTitle");
+    const nameEl = document.getElementById("membersName");
+    const emailPill = document.getElementById("membersEmailPill");
+    const emailLabel = document.getElementById("membersEmailLabel");
+    const subtitleEl = document.getElementById("membersSubtitle");
+    const actionsEl = document.getElementById("membersActions");
+    const noteEl = document.getElementById("membersNote");
+    const shellEl = document.getElementById("membersShell");
+
+    if (!email) {
+      // Logged-out view
+      shellEl.classList.add("logged-out");
+      nameEl.textContent = "guest";
+      titleEl.innerHTML = "You’ll need to log in to see this area.";
+      subtitleEl.textContent =
+        "We couldn’t detect an active Linglear session. Log in securely and we’ll bring you right back here.";
+      emailPill.style.display = "none";
+      noteEl.textContent = "Tip: keep this tab open while you log in so the redirect feels seamless.";
+
+      actionsEl.innerHTML = `
+        <a href="login.html" class="btn-primary">
+          Log in / Sign up
+          <span>→</span>
+        </a>
+        <a href="index.html" class="btn-ghost">
+          Back to landing
+        </a>
+      `;
+    } else {
+      emailLabel.textContent = email;
+      nameEl.textContent = email.split("@")[0];
     }
 
-    function loadTokens() {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (!raw) return null;
-      try { return JSON.parse(raw); } catch { return null; }
+    function goToLibrary() {
+      // Placeholder – update later once your subtitle library route exists
+      alert("Library view coming soon. Wire this button to your real dashboard route.");
     }
 
-    function clearTokens() {
-      localStorage.removeItem(STORAGE_KEY);
+    function logout() {
+      // Clear local tokens used by the front-end.
+      localStorage.removeItem("ling_auth_email");
+      localStorage.removeItem("ling_auth_access_token");
+      localStorage.removeItem("ling_auth_id_token");
+
+      // Redirect to your Hosted UI logout URL if you want full Cognito logout:
+      // Replace with your real domain & client_id if needed.
+      const cognitoDomain = "https://linglear-auth-1.auth.us-east-1.amazoncognito.com";
+      const clientId = "6lsk8r1jbfs2g0619pb6a01t9q"; // same as your login setup
+      const logoutRedirect = encodeURIComponent("https://linglear.com/");
+
+      window.location.href =
+        `${cognitoDomain}/logout?client_id=${clientId}&logout_uri=${logoutRedirect}`;
     }
-
-    function getEmailFromIdToken(idToken) {
-      if (!idToken) return null;
-      try {
-        const [, payloadBase64] = idToken.split(".");
-        const payloadJson = atob(payloadBase64.replace(/-/g, "+").replace(/_/g, "/"));
-        const payload = JSON.parse(payloadJson);
-        return payload.email || payload["cognito:username"] || null;
-      } catch {
-        return null;
-      }
-    }
-
-    function initMembersPage() {
-      const tokens = loadTokens();
-      const guard = document.getElementById("guard");
-      const content = document.getElementById("membersContent");
-      const status = document.getElementById("authStatusText");
-      const logoutBtn = document.getElementById("logoutBtn");
-
-      if (!tokens) {
-        // Not logged in: show guard
-        guard.classList.remove("hidden");
-        content.classList.add("hidden");
-        status.textContent = "No active login detected.";
-        return;
-      }
-
-      const email = getEmailFromIdToken(tokens.id_token) || "member";
-      document.getElementById("memberName").textContent = email;
-      status.innerHTML =
-        '<span class="auth-email">' +
-        email +
-        "</span><span>Logged in via Cognito.</span>";
-
-      guard.classList.add("hidden");
-      content.classList.remove("hidden");
-      logoutBtn.classList.remove("hidden");
-    }
-
-    document.getElementById("backHomeBtn").addEventListener("click", () => {
-      window.location.href = "./";
-    });
-
-    document.getElementById("goLoginBtn").addEventListener("click", () => {
-      window.location.href = "./";
-    });
-
-    document.getElementById("logoutBtn").addEventListener("click", () => {
-      clearTokens();
-      window.location.href = buildLogoutUrl();
-    });
-
-    document.getElementById("year").textContent = new Date().getFullYear();
-    initMembersPage();
   </script>
 </body>
 </html>
