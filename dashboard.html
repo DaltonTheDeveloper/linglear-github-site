@@ -2,76 +2,60 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Linglear – Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <!-- Use the glowing fox favicon to match the rest of the site -->
   <link rel="icon" type="image/png" href="fox-logo-glow.png" />
-  <link rel="stylesheet" href="style.css" />
+  <!-- Shared dashboard styles for sidebar layout and dark theme -->
+  <link rel="stylesheet" href="dashboard.css" />
 </head>
 <body>
-  <nav class="navbar">
-    <div class="logo-container">
-      <img src="fox-logo-glow.png" alt="Linglear logo" />
-      <span>Linglear</span>
+  <div class="dashboard">
+    <!-- Left sidebar navigation -->
+    <div class="sidebar" id="sidebar">
+      <div>
+        <div class="sidebar-brand">
+          <img src="fox-logo-glow.png" alt="Linglear logo" />
+          <span>Linglear</span>
+        </div>
+        <nav class="sidebar-nav">
+          <a href="dashboard.html" id="nav-dashboard" class="active">Home</a>
+          <a href="library.html" id="nav-library">Library</a>
+          <a href="srs.html" id="nav-srs">SRS</a>
+          <a href="goals.html" id="nav-goals">Goals &amp; Contributions</a>
+          <a href="messages.html" id="nav-messages">Messages &amp; Affiliate</a>
+          <a href="progress.html" id="nav-progress">Progress Tracker</a>
+        </nav>
+      </div>
+      <!-- Footer shows the logged in user's email and provides a log out button -->
+      <div class="sidebar-footer">
+        <span class="email" id="sidebarEmail"></span>
+        <button id="logoutBtn">Log out</button>
+      </div>
     </div>
-    <div class="nav-links">
-      <a href="index.html">Home</a>
-      <a href="roadmap.html">Roadmap</a>
-      <a href="download.html">Download Extension</a>
-      <a href="subscription.html">Subscriptions</a>
-      <a href="join.html">Join the Convo</a>
-      <a href="dashboard.html" class="active">Dashboard</a>
+    <!-- Main dashboard content -->
+    <main class="dashboard-content">
+      <h1>Your Dashboard</h1>
+      <p>
+        Welcome to your personalised Linglear dashboard. Use the navigation
+        on the left to access your library, review spaced repetition cards,
+        set goals, connect with other learners, and track your progress.
+      </p>
+      <p>
+        We’re continually building new tools and features to help you learn
+        languages more effectively. Stay tuned for updates!
+      </p>
+    </main>
+    <!-- Mobile menu toggle -->
+    <div class="sidebar-toggle" id="sidebarToggle">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="3" y1="6" x2="21" y2="6" />
+        <line x1="3" y1="12" x2="21" y2="12" />
+        <line x1="3" y1="18" x2="21" y2="18" />
+      </svg>
     </div>
-    <div class="auth-buttons">
-      <span id="userName" class="user-name"></span>
-      <button id="loginBtn" class="login-btn-small">Log in / Sign up</button>
-      <button id="logoutBtn" class="logout-btn-small" style="display: none;">Log out</button>
-    </div>
-  </nav>
-
-  <div class="dashboard-container">
-    <div id="dashboardCard" class="dashboard-card"></div>
   </div>
-
-  <script src="auth.js"></script>
-  <script>
-    document.addEventListener('DOMContentLoaded', function () {
-      const card = document.getElementById('dashboardCard');
-      const idToken = localStorage.getItem('linglear_id_token');
-      const email = localStorage.getItem('ling_auth_email');
-      if (idToken) {
-        const name = email || 'valued member';
-        card.innerHTML = `
-          <h2>Welcome to your dashboard</h2>
-          <p>Hello, ${name}! You’re now authenticated and can access members‑only features.</p>
-          <p>We’re currently building the subtitle tools and vocabulary lists that will live here. Stay tuned for updates on your personalised dashboard.</p>
-          <a href="#" id="logoutFromDashboard" class="logout-link">Log out</a>
-        `;
-        // Attach logout handler to our custom logout link
-        const customLogout = document.getElementById('logoutFromDashboard');
-        if (customLogout) {
-          customLogout.addEventListener('click', function (e) {
-            e.preventDefault();
-            // Trigger the nav’s logout button to reuse auth.js logic
-            const navLogout = document.getElementById('logoutBtn');
-            if (navLogout) navLogout.click();
-          });
-        }
-      } else {
-        card.innerHTML = `
-          <h2>Members only</h2>
-          <p>It looks like you're not logged in yet. Please sign in or create an account to access your dashboard.</p>
-          <a href="#" id="loginFromDashboard" class="logout-link">Log in / Sign up</a>
-        `;
-        const customLogin = document.getElementById('loginFromDashboard');
-        if (customLogin) {
-          customLogin.addEventListener('click', function (e) {
-            e.preventDefault();
-            const navLogin = document.getElementById('loginBtn');
-            if (navLogin) navLogin.click();
-          });
-        }
-      }
-    });
-  </script>
+  <!-- Shared dashboard logic to check auth, populate email, log out and toggle sidebar -->
+  <script src="dashboard.js"></script>
 </body>
 </html>
