@@ -1,61 +1,119 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Linglear – Dashboard</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <!-- Use the glowing fox favicon to match the rest of the site -->
-  <link rel="icon" type="image/png" href="fox-logo-glow.png" />
-  <!-- Shared dashboard styles for sidebar layout and dark theme -->
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Linglear — Dashboard</title>
+  <!-- Dashboard-specific styles -->
   <link rel="stylesheet" href="dashboard.css" />
+  <meta name="theme-color" content="#071326" />
 </head>
 <body>
-  <div class="dashboard">
-    <!-- Left sidebar navigation -->
-    <div class="sidebar" id="sidebar">
-      <div>
-        <div class="sidebar-brand">
-          <img src="fox-logo-glow.png" alt="Linglear logo" />
-          <span>Linglear</span>
-        </div>
-        <nav class="sidebar-nav">
-          <a href="dashboard.html" id="nav-dashboard" class="active">Home</a>
-          <a href="library.html" id="nav-library">Library</a>
-          <a href="srs.html" id="nav-srs">SRS</a>
-          <a href="goals.html" id="nav-goals">Goals &amp; Contributions</a>
-          <a href="messages.html" id="nav-messages">Messages &amp; Affiliate</a>
-          <a href="progress.html" id="nav-progress">Progress Tracker</a>
-        </nav>
-      </div>
-      <!-- Footer shows the logged in user's email and provides a log out button -->
-      <div class="sidebar-footer">
-        <span class="email" id="sidebarEmail"></span>
-        <button id="logoutBtn">Log out</button>
+  <div id="bg"></div>
+
+  <!-- Top bar -->
+  <header class="topbar">
+    <div class="brand">
+      <!-- Use the fox logo so the dashboard matches the rest of the site -->
+      <img class="brand-logo" src="fox-logo-glow.png" alt="Linglear" />
+      <div class="brand-text">
+        <div class="brand-name">Linglear</div>
+        <div class="brand-sub">Subscriber Dashboard</div>
       </div>
     </div>
-    <!-- Main dashboard content -->
-    <main class="dashboard-content">
-      <h1>Your Dashboard</h1>
-      <p>
-        Welcome to your personalised Linglear dashboard. Use the navigation
-        on the left to access your library, review spaced repetition cards,
-        set goals, connect with other learners, and track your progress.
-      </p>
-      <p>
-        We’re continually building new tools and features to help you learn
-        languages more effectively. Stay tuned for updates!
-      </p>
+
+    <div class="topbar-right">
+      <div id="netStatus" class="pill pill-neutral" title="Backend status">
+        <span class="dot"></span>
+        <span class="txt">Checking…</span>
+      </div>
+
+      <button id="btnOpenCmd" class="iconbtn" title="Command Palette" aria-label="Command Palette">
+        <span class="icon">⌘</span>
+      </button>
+
+      <div class="userchip" id="userChip">
+        <div class="avatar" id="avatar">?</div>
+        <div class="usertext">
+          <!-- `auth.js` expects an element with id="userName" to populate the logged in user's email. -->
+          <div class="username" id="userName">Loading…</div>
+          <!-- This second line is not controlled by auth.js but can be used by dashboard.js to show a subtitle. -->
+          <div class="usersub" id="userSub">Subscriber</div>
+        </div>
+        <!-- The logout button id must be `logoutBtn` so the original auth.js hooks its click handler. -->
+        <button id="logoutBtn" class="linkbtn">Log out</button>
+        <!-- Include a hidden login button so auth.js can toggle between login/logout. -->
+        <button id="loginBtn" class="linkbtn" style="display:none;">Log in</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Layout -->
+  <div class="layout">
+    <aside class="sidebar">
+      <nav class="nav">
+        <a class="navitem" href="#/overview" data-route="overview">
+          <span class="navicon">⚡</span>
+          <span>Overview</span>
+          <span class="navtag" id="navStreakTag">0d</span>
+        </a>
+
+        <a class="navitem" href="#/friends" data-route="friends">
+          <span class="navicon">👥</span>
+          <span>Friends</span>
+          <span class="navtag" id="navFriendsTag">0</span>
+        </a>
+
+        <a class="navitem" href="#/votes" data-route="votes">
+          <span class="navicon">🗳️</span>
+          <span>Votes</span>
+          <span class="navtag" id="navCreditsTag">$0.00</span>
+        </a>
+
+        <a class="navitem" href="#/community" data-route="community">
+          <span class="navicon">🏆</span>
+          <span>Community</span>
+          <span class="navtag" id="navRankTag">—</span>
+        </a>
+      </nav>
+
+      <div class="sidecard">
+        <div class="sidecard-title">Quick actions</div>
+        <button class="btn btn-primary" id="btnAddWatch">+ Log Watch Time</button>
+        <button class="btn btn-ghost" id="btnClaimDaily">Claim Daily Bonus</button>
+      </div>
+
+      <div class="sidefoot">
+        <div class="muted">v0.1 • Dashboard-only</div>
+        <div class="muted">Raw HTML/CSS/JS</div>
+      </div>
+    </aside>
+
+    <main class="main">
+      <div class="main-inner">
+        <!-- Route views -->
+        <section id="view-overview" class="view"></section>
+        <section id="view-friends" class="view"></section>
+        <section id="view-votes" class="view"></section>
+        <section id="view-community" class="view"></section>
+      </div>
     </main>
-    <!-- Mobile menu toggle -->
-    <div class="sidebar-toggle" id="sidebarToggle">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <line x1="3" y1="6" x2="21" y2="6" />
-        <line x1="3" y1="12" x2="21" y2="12" />
-        <line x1="3" y1="18" x2="21" y2="18" />
-      </svg>
+  </div>
+
+  <!-- Toasts -->
+  <div id="toasts" class="toasts" aria-live="polite" aria-atomic="true"></div>
+
+  <!-- Command palette -->
+  <div id="cmdOverlay" class="overlay hidden" role="dialog" aria-modal="true">
+    <div class="cmd">
+      <input id="cmdInput" class="cmd-input" placeholder="Type a command… (overview, friends, votes, community, logout)" />
+      <div id="cmdList" class="cmd-list"></div>
+      <div class="cmd-hint muted">Tip: Press <b>Esc</b> to close. Use <b>/</b> to open.</div>
     </div>
   </div>
-  <!-- Shared dashboard logic to check auth, populate email, log out and toggle sidebar -->
+
+  <!-- Auth & dashboard logic -->
+  <script src="auth.js"></script>
   <script src="dashboard.js"></script>
 </body>
 </html>

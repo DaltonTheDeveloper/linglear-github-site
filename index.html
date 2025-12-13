@@ -3,11 +3,13 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Linglear – Learn languages effortlessly</title>
+  <title>Linglear – Learn languages through shows</title>
   <link rel="icon" type="image/png" href="fox-logo-glow.png" />
+  <!-- Public marketing pages use style.css for their look and feel -->
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
+  <!-- Navigation bar -->
   <nav class="navbar">
     <div class="logo-container">
       <img src="fox-logo-glow.png" alt="Linglear logo" />
@@ -19,6 +21,7 @@
       <a href="download.html">Download Extension</a>
       <a href="subscription.html">Subscriptions</a>
       <a href="join.html">Join the Convo</a>
+      <!-- Subscribers can access the dashboard once signed in -->
       <a href="dashboard.html">Dashboard</a>
     </div>
     <div class="auth-buttons">
@@ -28,45 +31,17 @@
     </div>
   </nav>
 
-  <section class="hero">
-    <h1>Unlock your potential with AI‑driven language learning</h1>
+  <!-- Hero section -->
+  <section class="section-container">
+    <h1>Learn languages through your favourite shows</h1>
     <p>
-      Enhance your comprehension with smart subtitles, interactive transcripts and
-      real‑time vocabulary training. Linglear works alongside your favourite
-      streaming services to help you master new languages faster.
+      Overlay accurate subtitles, build your vocabulary and vote on new
+      translations. Linglear turns watching into learning.
     </p>
-    <div class="hero-buttons">
-      <a href="download.html" class="btn-primary">Get the Extension</a>
-      <a href="#features" class="btn-secondary">Learn more</a>
-    </div>
+    <a class="btn-primary" href="dashboard.html" style="margin-top:20px; display:inline-block;">Go to Dashboard</a>
   </section>
 
-  <section id="features" class="section-container">
-    <div class="feature-cards">
-      <div class="feature-card">
-        <h3>Smart Subtitles</h3>
-        <p>
-          Translate unknown words on the fly and see them highlighted in your
-          native language as you watch.
-        </p>
-      </div>
-      <div class="feature-card">
-        <h3>Vocabulary Builder</h3>
-        <p>
-          Save unfamiliar words to your personal list and practise them later
-          with spaced repetition exercises.
-        </p>
-      </div>
-      <div class="feature-card">
-        <h3>Seamless Learning</h3>
-        <p>
-          Linglear sits quietly in the corner, enhancing your favourite
-          streaming platform without interrupting your viewing experience.
-        </p>
-      </div>
-    </div>
-  </section>
-
+  <!-- Load Cognito UI helper. It updates the login button and user email. -->
   <script src="auth.js"></script>
 </body>
 </html>
