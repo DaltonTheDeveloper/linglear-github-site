@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Linglear • Friends</title>
+  <link rel="stylesheet" href="../assets/app.css"/>
+</head>
+<body>
+  <div class="topbar">
+    <div class="topbar-inner">
+      <div class="brand"><span class="logo-dot"></span> Linglear</div>
+      <div class="pill">
+        <small>Signed in as</small>
+        <strong id="meName">—</strong>
+      </div>
+    </div>
+  </div>
+
+  <div class="container fade-in" id="pageFriends">
+    <div class="grid">
+      <div class="card" style="grid-column: span 5;">
+        <div class="card-header">
+          <div class="card-title">Add Friends</div>
+          <span class="badge"><span class="dot"></span>Growth</span>
+        </div>
+        <div class="card-body">
+          <div style="font-weight:900">By friend code</div>
+          <div class="row" style="margin-top:10px;">
+            <input id="friendCodeInput" class="input" placeholder="e.g. DALTON-7F3K9Q"/>
+            <button id="addByCodeBtn" class="btn primary">Send</button>
+          </div>
+
+          <div style="font-weight:900; margin-top:16px;">Invite by email</div>
+          <div class="row" style="margin-top:10px;">
+            <input id="friendEmailInput" class="input" placeholder="friend@email.com"/>
+            <button id="inviteEmailBtn" class="btn">Invite</button>
+          </div>
+
+          <div style="color:rgba(234,240,255,0.7); margin-top:12px;">
+            Tip: squads are coming next—friends will coordinate vote targets.
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="grid-column: span 7;">
+        <div class="card-header">
+          <div class="card-title">Compare This Week</div>
+          <span class="badge"><span class="dot"></span>Leaderboard</span>
+        </div>
+        <div class="card-body">
+          <div class="list" id="compareList"></div>
+          <div style="margin-top:10px; color:rgba(234,240,255,0.65);" id="statusFriends">—</div>
+        </div>
+      </div>
+
+      <div class="card" style="grid-column: span 12;">
+        <div class="card-header">
+          <div class="card-title">Your Friends</div>
+          <span class="badge"><span class="dot"></span>List</span>
+        </div>
+        <div class="card-body">
+          <div class="list" id="friendsList"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="bottom-nav">
+    <div class="wrap">
+      <a class="navbtn" href="./home.html">Home</a>
+      <a class="navbtn active" href="./friends.html">Friends</a>
+      <a class="navbtn" href="./vote.html">Vote</a>
+      <a class="navbtn" href="./community.html">Community</a>
+    </div>
+  </div>
+
+  <script src="../assets/api.js"></script>
+  <script src="../assets/sparks.js"></script>
+  <script src="../assets/app.js"></script>
+</body>
+</html>

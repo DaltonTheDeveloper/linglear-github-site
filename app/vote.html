@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Linglear • Vote</title>
+  <link rel="stylesheet" href="../assets/app.css"/>
+</head>
+<body>
+  <div class="topbar">
+    <div class="topbar-inner">
+      <div class="brand"><span class="logo-dot"></span> Linglear</div>
+      <div class="pill">
+        <small>Signed in as</small>
+        <strong id="meName">—</strong>
+      </div>
+    </div>
+  </div>
+
+  <div class="container fade-in" id="pageVote">
+    <div class="grid">
+      <div class="card" style="grid-column: span 12;">
+        <div class="card-header">
+          <div class="card-title">Vote Power</div>
+          <span class="badge"><span class="dot"></span>Monthly</span>
+        </div>
+        <div class="card-body">
+          <div class="row">
+            <div class="kpi"><div class="label">Remaining</div><div class="value" id="votesRemaining">0</div></div>
+            <div class="kpi"><div class="label">Earned</div><div class="value" id="votesEarned">0</div></div>
+            <div class="kpi"><div class="label">Spent</div><div class="value" id="votesSpent">0</div></div>
+          </div>
+          <div style="color:rgba(234,240,255,0.7); margin-top:10px;">
+            Tip: targets near 100% unlock faster—coordinate with friends to win.
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="grid-column: span 12;">
+        <div class="card-header">
+          <div class="card-title">Targets</div>
+          <span class="badge"><span class="dot"></span>Recommended</span>
+        </div>
+        <div class="card-body">
+          <div class="list" id="targetsList"></div>
+          <div style="margin-top:10px; color:rgba(234,240,255,0.65);" id="statusVote">—</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="bottom-nav">
+    <div class="wrap">
+      <a class="navbtn" href="./home.html">Home</a>
+      <a class="navbtn" href="./friends.html">Friends</a>
+      <a class="navbtn active" href="./vote.html">Vote</a>
+      <a class="navbtn" href="./community.html">Community</a>
+    </div>
+  </div>
+
+  <script src="../assets/api.js"></script>
+  <script src="../assets/sparks.js"></script>
+  <script src="../assets/app.js"></script>
+</body>
+</html>

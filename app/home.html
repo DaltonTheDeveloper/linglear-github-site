@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Linglear • Home</title>
+  <link rel="stylesheet" href="../assets/app.css"/>
+</head>
+<body>
+  <div class="topbar">
+    <div class="topbar-inner">
+      <div class="brand"><span class="logo-dot"></span> Linglear</div>
+      <div class="pill">
+        <small>Signed in as</small>
+        <strong id="meName">—</strong>
+      </div>
+    </div>
+  </div>
+
+  <div class="container fade-in" id="pageHome">
+    <div id="authNotice" class="card" style="display:none; padding:14px; margin-top:16px;">
+      <strong>Not logged in.</strong>
+      <div style="color:rgba(234,240,255,0.7); margin-top:6px;">
+        You need a token in <code>localStorage.linglear_token</code> to load your personal dashboard.
+      </div>
+    </div>
+
+    <div class="grid">
+      <!-- Streak -->
+      <div class="card" style="grid-column: span 4;">
+        <div class="card-header">
+          <div class="card-title">Streak</div>
+          <span class="badge"><span class="dot"></span>Daily</span>
+        </div>
+        <div class="card-body">
+          <div class="streak">
+            <div class="fire" id="fireIcon"></div>
+            <div>
+              <div class="big"><span id="streakCount">0</span> days</div>
+              <div style="color:rgba(234,240,255,0.7); margin-top:4px;">Keep watching + voting to maintain it.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Week stats -->
+      <div class="card" style="grid-column: span 8;">
+        <div class="card-header">
+          <div class="card-title">This Week</div>
+          <span class="badge"><span class="dot"></span>Live</span>
+        </div>
+        <div class="card-body">
+          <div class="row">
+            <div class="kpi"><div class="label">Minutes watched</div><div class="value" id="weekMinutes">0</div></div>
+            <div class="kpi"><div class="label">Votes cast</div><div class="value" id="weekVotes">0</div></div>
+            <div class="kpi"><div class="label">Episodes completed</div><div class="value" id="weekEpisodes">0</div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Next unlock -->
+      <div class="card" style="grid-column: span 7;">
+        <div class="card-header">
+          <div class="card-title">Next Unlock</div>
+          <span class="badge"><span class="dot"></span><span id="unlockPct">0%</span></span>
+        </div>
+        <div class="card-body">
+          <div style="font-weight:900; font-size:18px;" id="unlockTitle">—</div>
+          <div style="color:rgba(234,240,255,0.7); margin-top:6px;" id="unlockMeta">—</div>
+          <div class="progress" style="margin-top:12px;"><i id="unlockBar"></i></div>
+          <div class="row" style="margin-top:12px; justify-content:space-between;">
+            <a class="btn primary" href="./vote.html">Push this target</a>
+            <span class="badge"><span class="dot"></span>Momentum</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Friend code -->
+      <div class="card" style="grid-column: span 5;">
+        <div class="card-header">
+          <div class="card-title">Friend Code</div>
+          <span class="badge"><span class="dot"></span>Share</span>
+        </div>
+        <div class="card-body">
+          <div style="font-weight:900; font-size:18px;">Your code</div>
+          <div class="big" style="font-size:26px; margin-top:6px;" id="friendCode">—</div>
+          <div style="color:rgba(234,240,255,0.7); margin-top:8px;">
+            Friends can enter this to add you instantly.
+          </div>
+          <div style="margin-top:12px;">
+            <button class="btn" onclick="navigator.clipboard.writeText(document.getElementById('friendCode').textContent)">Copy</button>
+            <a class="btn primary" href="./friends.html" style="margin-left:8px;">Manage friends</a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Continue watching -->
+      <div class="card" style="grid-column: span 6;">
+        <div class="card-header">
+          <div class="card-title">Continue Watching</div>
+          <span class="badge"><span class="dot"></span>Personal</span>
+        </div>
+        <div class="card-body">
+          <div class="list" id="continueList"></div>
+        </div>
+      </div>
+
+      <!-- Friends activity -->
+      <div class="card" style="grid-column: span 6;">
+        <div class="card-header">
+          <div class="card-title">Friends Activity</div>
+          <span class="badge"><span class="dot"></span>Social</span>
+        </div>
+        <div class="card-body">
+          <div class="list" id="friendFeed"></div>
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top:14px; color:rgba(234,240,255,0.65);" id="statusLine">—</div>
+  </div>
+
+  <div class="bottom-nav">
+    <div class="wrap">
+      <a class="navbtn active" href="./home.html">Home</a>
+      <a class="navbtn" href="./friends.html">Friends</a>
+      <a class="navbtn" href="./vote.html">Vote</a>
+      <a class="navbtn" href="./community.html">Community</a>
+    </div>
+  </div>
+
+  <script src="../assets/api.js"></script>
+  <script src="../assets/sparks.js"></script>
+  <script src="../assets/app.js"></script>
+</body>
+</html>
