@@ -1,8 +1,7 @@
 // Configure your API base here.
-// For local dev you can set window.LINGLEAR_API_BASE manually before this script loads.
-// In production the API is typically served under the same domain as the dashboard (e.g. https://dashboard.example.com/api).
-// To support that out of the box we default to an empty string, which makes fetch requests relative to the current origin.
-window.LINGLEAR_API_BASE = typeof window.LINGLEAR_API_BASE === "string" && window.LINGLEAR_API_BASE.trim() !== ""
+// ✅ Production default MUST be the public API so every user can use the dashboard.
+// You can still override it for local dev by setting window.LINGLEAR_API_BASE before this script loads.
+window.LINGLEAR_API_BASE = (typeof window.LINGLEAR_API_BASE === "string" && window.LINGLEAR_API_BASE.trim() !== "")
   ? window.LINGLEAR_API_BASE
   : "https://api.linglear.com";
 
