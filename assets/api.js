@@ -1,7 +1,10 @@
 // Configure your API base here.
-// For local dev:  http://localhost:3000
-// For prod:       https://api.linglear.com  (or your EC2/ALB domain)
-window.LINGLEAR_API_BASE = window.LINGLEAR_API_BASE || "http://localhost:3000";
+// For local dev you can set window.LINGLEAR_API_BASE manually before this script loads.
+// In production the API is typically served under the same domain as the dashboard (e.g. https://dashboard.example.com/api).
+// To support that out of the box we default to an empty string, which makes fetch requests relative to the current origin.
+window.LINGLEAR_API_BASE = typeof window.LINGLEAR_API_BASE === "string" && window.LINGLEAR_API_BASE.trim() !== ""
+  ? window.LINGLEAR_API_BASE
+  : "";
 
 function getToken() {
   return localStorage.getItem("linglear_token") || "";

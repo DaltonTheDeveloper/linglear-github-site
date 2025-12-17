@@ -65,7 +65,8 @@
       // Continue watching
       const cw = $("#continueList");
       cw.innerHTML = "";
-      (data.continue_watching || []).slice(0, 5).forEach((x) => {
+      const cont = (data.continue_watching || []).slice(0, 5);
+      cont.forEach((x) => {
         const div = document.createElement("div");
         div.className = "item";
         div.innerHTML = `
@@ -79,11 +80,25 @@
         `;
         cw.appendChild(div);
       });
+      // placeholder if empty
+      if (cont.length === 0) {
+        const div = document.createElement("div");
+        div.className = "item";
+        div.innerHTML = `
+          <div class="rank">—</div>
+          <div style="flex:1">
+            <div style="font-weight:800">No shows yet</div>
+            <div class="meta">Start watching a show to see it here.</div>
+          </div>
+        `;
+        cw.appendChild(div);
+      }
 
       // Friends activity
       const fa = $("#friendFeed");
       fa.innerHTML = "";
-      (data.friend_activity || []).slice(0, 6).forEach((ev) => {
+      const friendAct = (data.friend_activity || []).slice(0, 6);
+      friendAct.forEach((ev) => {
         const div = document.createElement("div");
         div.className = "item";
         div.innerHTML = `
@@ -96,6 +111,18 @@
         `;
         fa.appendChild(div);
       });
+      if (friendAct.length === 0) {
+        const div = document.createElement("div");
+        div.className = "item";
+        div.innerHTML = `
+          <div class="rank">—</div>
+          <div style="flex:1">
+            <div style="font-weight:800">No activity yet</div>
+            <div class="meta">Your friends' activity will appear here.</div>
+          </div>
+        `;
+        fa.appendChild(div);
+      }
 
       // Spark streak
       if (data.streak_incremented) {
@@ -126,7 +153,8 @@
       // list
       const ul = $("#friendsList");
       ul.innerHTML = "";
-      (list.friends || []).forEach((f) => {
+      const friends = list.friends || [];
+      friends.forEach((f) => {
         const div = document.createElement("div");
         div.className = "item";
         // Determine action buttons based on status
@@ -152,11 +180,24 @@
         `;
         ul.appendChild(div);
       });
+      if (friends.length === 0) {
+        const div = document.createElement("div");
+        div.className = "item";
+        div.innerHTML = `
+          <div class="rank">—</div>
+          <div style="flex:1">
+            <div style="font-weight:800">No friends yet</div>
+            <div class="meta">Add a friend code above to connect.</div>
+          </div>
+        `;
+        ul.appendChild(div);
+      }
 
       // compare
       const table = $("#compareList");
       table.innerHTML = "";
-      (compare.rows || []).forEach((r, idx) => {
+      const compareRows = compare.rows || [];
+      compareRows.forEach((r, idx) => {
         const div = document.createElement("div");
         div.className = "item";
         div.innerHTML = `
@@ -169,6 +210,18 @@
         `;
         table.appendChild(div);
       });
+      if (compareRows.length === 0) {
+        const div = document.createElement("div");
+        div.className = "item";
+        div.innerHTML = `
+          <div class="rank">—</div>
+          <div style="flex:1">
+            <div style="font-weight:800">No comparison data</div>
+            <div class="meta">Once you and a friend start watching shows, your stats will appear here.</div>
+          </div>
+        `;
+        table.appendChild(div);
+      }
 
       status.textContent = "Loaded.";
 
