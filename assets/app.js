@@ -129,13 +129,26 @@
       (list.friends || []).forEach((f) => {
         const div = document.createElement("div");
         div.className = "item";
+        // Determine action buttons based on status
+        let actions = "";
+        if (f.status === "incoming") {
+          actions = `<button class="btn small acceptBtn" data-request="${f.request_id}">Accept</button>
+                     <button class="btn small declineBtn" data-request="${f.request_id}">Decline</button>`;
+        } else if (f.status === "outgoing") {
+          actions = `<span class="badge"><span class="dot"></span>Pending</span>`;
+        } else if (f.status === "blocked") {
+          actions = `<button class="btn small unblockBtn" data-id="${f.friend_id}">Unblock</button>`;
+        } else {
+          // accepted friendship
+          actions = `<button class="btn small blockBtn" data-id="${f.friend_id}">Block</button>`;
+        }
         div.innerHTML = `
           <div class="rank">${escapeHtml((f.display_name || "?")[0])}</div>
           <div style="flex:1">
             <div style="font-weight:800">${escapeHtml(f.display_name || "")}</div>
             <div class="meta">${escapeHtml(f.status || "Friend")}</div>
           </div>
-          <span class="badge"><span class="dot"></span>${escapeHtml(f.shared || "Shared")}</span>
+          <div class="actions" style="display:flex;gap:4px;">${actions}</div>
         `;
         ul.appendChild(div);
       });
@@ -158,9 +171,62 @@
       });
 
       status.textContent = "Loaded.";
+
+      // Attach event handlers after rendering list
+      ul.querySelectorAll(".acceptBtn").forEach(btn => {
+        btn.addEventListener("click", async (ev) => {
+          const rid = ev.currentTarget.getAttribute("data-request");
+          try {
+            await window.LinglearAPI.apiPost("/api/friends/accept", { request_id: Number(rid) });
+            alert("Friend request accepted.");
+            loadFriends();
+          } catch (err) {
+            alert(err.message);
+          }
+        });
+      });
+      ul.querySelectorAll(".declineBtn").forEach(btn => {
+        btn.addEventListener("click", async (ev) => {
+          const rid = ev.currentTarget.getAttribute("data-request");
+          try {
+            await window.LinglearAPI.apiPost("/api/friends/decline", { request_id: Number(rid) });
+            alert("Friend request declined.");
+            loadFriends();
+          } catch (err) {
+            alert(err.message);
+          }
+        });
+      });
+      ul.querySelectorAll(".blockBtn").forEach(btn => {
+        btn.addEventListener("click", async (ev) => {
+          const fid = ev.currentTarget.getAttribute("data-id");
+          if (!confirm("Block this user? They will not be able to interact with you.")) return;
+          try {
+            await window.LinglearAPI.apiPost("/api/friends/block", { friend_id: Number(fid) });
+            alert("User blocked.");
+            loadFriends();
+          } catch (err) {
+            alert(err.message);
+          }
+        });
+      });
+      ul.querySelectorAll(".unblockBtn").forEach(btn => {
+        btn.addEventListener("click", async (ev) => {
+          const fid = ev.currentTarget.getAttribute("data-id");
+          try {
+            await window.LinglearAPI.apiPost("/api/friends/unblock", { friend_id: Number(fid) });
+            alert("User unblocked.");
+            loadFriends();
+          } catch (err) {
+            alert(err.message);
+          }
+        });
+      });
     } catch (e) {
       status.textContent = `Could not load: ${e.message}`;
     }
+
+    // Attach event handlers for dynamic buttons inside try block
 
     // Friend code request
     const codeBtn = $("#addByCodeBtn");
