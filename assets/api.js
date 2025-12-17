@@ -1,25 +1,20 @@
-// Linglear API helper
-// Production default MUST be the public API so everyone can use it.
-// You can override by setting window.LINGLEAR_API_BASE before this loads.
-window.LINGLEAR_API_BASE =
-  typeof window.LINGLEAR_API_BASE === "string" && window.LINGLEAR_API_BASE.trim() !== ""
-    ? window.LINGLEAR_API_BASE
-    : "https://api.linglear.com";
+// Configure your API base here.
+// For local dev you can set window.LINGLEAR_API_BASE manually before this script loads.
+// In production the API is typically served under the same domain as the dashboard (e.g. https://dashboard.example.com/api).
+// To support that out of the box we default to an empty string, which makes fetch requests relative to the current origin.
+window.LINGLEAR_API_BASE = typeof window.LINGLEAR_API_BASE === "string" && window.LINGLEAR_API_BASE.trim() !== ""
+  ? window.LINGLEAR_API_BASE
+  : "";
 
-// ✅ Cognito Hosted UI gives us id_token + access_token.
-// Your auth.js stores them as linglear_id_token and linglear_access_token.
-// Prefer id_token (contains email/sub reliably for user mapping).
 function getToken() {
-  return (
-    localStorage.getItem("linglear_id_token") ||
-    localStorage.getItem("linglear_access_token") ||
-    localStorage.getItem("linglear_token") ||
-    ""
-  );
+  return localStorage.getItem("linglear_token") || "";
 }
 
 async function api(path, opts = {}) {
-  const headers = Object.assign({ "Content-Type": "application/json" }, opts.headers || {});
+  const headers = Object.assign(
+    { "Content-Type": "application/json" },
+    opts.headers || {}
+  );
 
   const token = getToken();
   if (token) headers["Authorization"] = `Bearer ${token}`;
@@ -31,11 +26,7 @@ async function api(path, opts = {}) {
 
   const text = await res.text();
   let data = null;
-  try {
-    data = text ? JSON.parse(text) : null;
-  } catch {
-    data = { raw: text };
-  }
+  try { data = text ? JSON.parse(text) : null; } catch { data = { raw: text }; }
 
   if (!res.ok) {
     const msg = (data && (data.error || data.message)) || `HTTP ${res.status}`;
@@ -44,11 +35,7 @@ async function api(path, opts = {}) {
   return data;
 }
 
-async function apiGet(path) {
-  return api(path, { method: "GET" });
-}
-async function apiPost(path, body) {
-  return api(path, { method: "POST", body: JSON.stringify(body || {}) });
-}
+async function apiGet(path) { return api(path, { method: "GET" }); }
+async function apiPost(path, body) { return api(path, { method: "POST", body: JSON.stringify(body || {}) }); }
 
 window.LinglearAPI = { apiGet, apiPost };
