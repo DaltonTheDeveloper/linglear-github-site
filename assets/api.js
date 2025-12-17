@@ -1,43 +1,115 @@
 // assets/api.js
+// Centralized fetch helper that automatically finds a Cognito/OIDC token.
 
-// Configure your API base here.
-// In production we MUST hit the public API domain so everyone can use it.
-window.LINGLEAR_API_BASE =
-  typeof window.LINGLEAR_API_BASE === "string" && window.LINGLEAR_API_BASE.trim() !== ""
-    ? window.LINGLEAR_API_BASE.trim()
-    : "https://api.linglear.com";
+// If you're running locally, keep localhost.
+// In production, set window.LINGLEAR_API_BASE before this loads, or edit below.
+const API_BASE =
+  (window && window.LINGLEAR_API_BASE) ||
+  (location.hostname === "localhost" ? "http://localhost:3000" : "https://api.linglear.com");
 
-function getToken() {
-  // Cognito login stores the ID token here (see auth.js)
-  return localStorage.getItem("linglear_id_token") || "";
+function tryParseJson(s) {
+  try { return JSON.parse(s); } catch (_) { return null; }
 }
 
-async function api(path, opts = {}) {
-  const headers = Object.assign(
-    { "Content-Type": "application/json" },
-    opts.headers || {}
-  );
+function findTokenInStorage(storage) {
+  if (!storage) return null;
 
-  const token = getToken();
-  if (token) headers["Authorization"] = `Bearer ${token}`;
+  // 1) Our explicit key
+  const direct = storage.getItem("linglear_token");
+  if (direct && direct !== "null" && direct !== "undefined") return direct;
 
-  const res = await fetch(`${window.LINGLEAR_API_BASE}${path}`, {
+  // 2) Amplify / Cognito Hosted UI localStorage keys:
+  // CognitoIdentityServiceProvider.<clientId>.<username>.idToken
+  for (const k of Object.keys(storage)) {
+    if (k.includes("CognitoIdentityServiceProvider") && k.endsWith(".idToken")) {
+      const v = storage.getItem(k);
+      if (v) return v;
+    }
+  }
+
+  // 3) OIDC-client-ts style (stored as JSON):
+  // oidc.user:<authority>:<clientId>
+  for (const k of Object.keys(storage)) {
+    if (k.startsWith("oidc.user:")) {
+      const obj = tryParseJson(storage.getItem(k));
+      if (obj && (obj.id_token || obj.access_token)) return obj.id_token || obj.access_token;
+    }
+  }
+
+  // 4) Generic fallbacks: any key that looks like a JWT in an id/access token slot
+  for (const k of Object.keys(storage)) {
+    const lk = k.toLowerCase();
+    if (lk.includes("idtoken") || lk.includes("id_token") || lk.includes("accesstoken") || lk.includes("access_token")) {
+      const v = storage.getItem(k);
+      if (v && v.split(".").length === 3) return v;
+    }
+  }
+
+  return null;
+}
+
+function getAuthToken() {
+  // Try localStorage then sessionStorage
+  const t1 = findTokenInStorage(window.localStorage);
+  if (t1) {
+    // Cache to our canonical key so future reads are cheap
+    if (window.localStorage.getItem("linglear_token") !== t1) {
+      window.localStorage.setItem("linglear_token", t1);
+    }
+    return t1;
+  }
+
+  const t2 = findTokenInStorage(window.sessionStorage);
+  if (t2) {
+    window.localStorage.setItem("linglear_token", t2);
+    return t2;
+  }
+
+  return null;
+}
+
+export async function apiFetch(path, opts = {}) {
+  const url = API_BASE + path;
+
+  const headers = new Headers(opts.headers || {});
+  const token = getAuthToken();
+  if (token) headers.set("Authorization", `Bearer ${token}`);
+
+  // If you're calling JSON endpoints
+  if (!headers.has("Content-Type") && opts.body && typeof opts.body === "string") {
+    headers.set("Content-Type", "application/json");
+  }
+
+  const res = await fetch(url, {
     ...opts,
-    headers
+    headers,
+    credentials: "include",
   });
 
-  const text = await res.text();
   let data = null;
-  try { data = text ? JSON.parse(text) : null; } catch { data = { raw: text }; }
+  const ct = res.headers.get("content-type") || "";
+  if (ct.includes("application/json")) {
+    try { data = await res.json(); } catch (_) {}
+  } else {
+    try { data = await res.text(); } catch (_) {}
+  }
 
   if (!res.ok) {
-    const msg = (data && (data.error || data.message)) || `HTTP ${res.status}`;
+    const msg = (data && data.error) ? data.error : `HTTP ${res.status}`;
     throw new Error(msg);
   }
+
   return data;
 }
 
-async function apiGet(path) { return api(path, { method: "GET" }); }
-async function apiPost(path, body) { return api(path, { method: "POST", body: JSON.stringify(body || {}) }); }
+export async function apiGet(path) {
+  return apiFetch(path, { method: "GET" });
+}
 
-window.LinglearAPI = { apiGet, apiPost };
+export async function apiPost(path, bodyObj) {
+  return apiFetch(path, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(bodyObj || {}),
+  });
+}
