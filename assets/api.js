@@ -4,7 +4,7 @@
 // To support that out of the box we default to an empty string, which makes fetch requests relative to the current origin.
 window.LINGLEAR_API_BASE = typeof window.LINGLEAR_API_BASE === "string" && window.LINGLEAR_API_BASE.trim() !== ""
   ? window.LINGLEAR_API_BASE
-  : "";
+  : "https://api.linglear.com";
 
 function getToken() {
   return localStorage.getItem("linglear_token") || "";
