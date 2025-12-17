@@ -1,115 +1,130 @@
-// assets/api.js
-// Centralized fetch helper that automatically finds a Cognito/OIDC token.
+/* Linglear Dashboard API helper (no modules; works on GitHub Pages).
+   Exposes: window.apiGet, window.apiPost, window.setBackend, window.getBackend, window.LinglearAPI
+*/
+(function () {
+  "use strict";
 
-// If you're running locally, keep localhost.
-// In production, set window.LINGLEAR_API_BASE before this loads, or edit below.
-const API_BASE =
-  (window && window.LINGLEAR_API_BASE) ||
-  (location.hostname === "localhost" ? "http://localhost:3000" : "https://api.linglear.com");
+  var DEFAULT_BACKEND = "https://api.linglear.com";
+  var STORAGE_KEY = "linglear_backend_base";
 
-function tryParseJson(s) {
-  try { return JSON.parse(s); } catch (_) { return null; }
-}
+  function normalizeBase(url) {
+    if (!url) return "";
+    url = String(url).trim();
+    if (!url) return "";
+    // Allow http(s) only
+    if (!/^https?:\/\//i.test(url)) return "";
+    // strip trailing slash
+    url = url.replace(/\/+$/g, "");
+    return url;
+  }
 
-function findTokenInStorage(storage) {
-  if (!storage) return null;
-
-  // 1) Our explicit key
-  const direct = storage.getItem("linglear_token");
-  if (direct && direct !== "null" && direct !== "undefined") return direct;
-
-  // 2) Amplify / Cognito Hosted UI localStorage keys:
-  // CognitoIdentityServiceProvider.<clientId>.<username>.idToken
-  for (const k of Object.keys(storage)) {
-    if (k.includes("CognitoIdentityServiceProvider") && k.endsWith(".idToken")) {
-      const v = storage.getItem(k);
-      if (v) return v;
+  function getBackend() {
+    try {
+      var saved = localStorage.getItem(STORAGE_KEY);
+      var normalized = normalizeBase(saved);
+      return normalized || DEFAULT_BACKEND;
+    } catch (e) {
+      return DEFAULT_BACKEND;
     }
   }
 
-  // 3) OIDC-client-ts style (stored as JSON):
-  // oidc.user:<authority>:<clientId>
-  for (const k of Object.keys(storage)) {
-    if (k.startsWith("oidc.user:")) {
-      const obj = tryParseJson(storage.getItem(k));
-      if (obj && (obj.id_token || obj.access_token)) return obj.id_token || obj.access_token;
+  function setBackend(baseUrl) {
+    var normalized = normalizeBase(baseUrl);
+    try {
+      if (!normalized) {
+        localStorage.removeItem(STORAGE_KEY);
+        return DEFAULT_BACKEND;
+      }
+      localStorage.setItem(STORAGE_KEY, normalized);
+      return normalized;
+    } catch (e) {
+      return normalized || DEFAULT_BACKEND;
     }
   }
 
-  // 4) Generic fallbacks: any key that looks like a JWT in an id/access token slot
-  for (const k of Object.keys(storage)) {
-    const lk = k.toLowerCase();
-    if (lk.includes("idtoken") || lk.includes("id_token") || lk.includes("accesstoken") || lk.includes("access_token")) {
-      const v = storage.getItem(k);
-      if (v && v.split(".").length === 3) return v;
+  function getToken() {
+    try {
+      return (
+        localStorage.getItem("linglear_token") ||
+        sessionStorage.getItem("linglear_token") ||
+        ""
+      );
+    } catch (e) {
+      return "";
     }
   }
 
-  return null;
-}
+  function buildUrl(path) {
+    var base = getBackend();
+    if (!path) return base;
+    if (path[0] !== "/") path = "/" + path;
+    return base + path;
+  }
 
-function getAuthToken() {
-  // Try localStorage then sessionStorage
-  const t1 = findTokenInStorage(window.localStorage);
-  if (t1) {
-    // Cache to our canonical key so future reads are cheap
-    if (window.localStorage.getItem("linglear_token") !== t1) {
-      window.localStorage.setItem("linglear_token", t1);
+  async function apiFetch(method, path, body) {
+    var token = getToken();
+    var headers = { "Content-Type": "application/json" };
+    if (token) headers["Authorization"] = "Bearer " + token;
+
+    var res = await fetch(buildUrl(path), {
+      method: method,
+      headers: headers,
+      body: body ? JSON.stringify(body) : undefined,
+      credentials: "omit",
+    });
+
+    var text = await res.text();
+    var data;
+    try {
+      data = text ? JSON.parse(text) : null;
+    } catch (e) {
+      data = { raw: text };
     }
-    return t1;
+
+    if (!res.ok) {
+      var msg =
+        (data && (data.error || data.message)) ||
+        ("HTTP " + res.status + " " + res.statusText);
+      var err = new Error(msg);
+      err.status = res.status;
+      err.data = data;
+      throw err;
+    }
+    return data;
   }
 
-  const t2 = findTokenInStorage(window.sessionStorage);
-  if (t2) {
-    window.localStorage.setItem("linglear_token", t2);
-    return t2;
+  function apiGet(path) {
+    return apiFetch("GET", path);
   }
 
-  return null;
-}
-
-export async function apiFetch(path, opts = {}) {
-  const url = API_BASE + path;
-
-  const headers = new Headers(opts.headers || {});
-  const token = getAuthToken();
-  if (token) headers.set("Authorization", `Bearer ${token}`);
-
-  // If you're calling JSON endpoints
-  if (!headers.has("Content-Type") && opts.body && typeof opts.body === "string") {
-    headers.set("Content-Type", "application/json");
+  function apiPost(path, body) {
+    return apiFetch("POST", path, body);
   }
 
-  const res = await fetch(url, {
-    ...opts,
-    headers,
-    credentials: "include",
-  });
-
-  let data = null;
-  const ct = res.headers.get("content-type") || "";
-  if (ct.includes("application/json")) {
-    try { data = await res.json(); } catch (_) {}
-  } else {
-    try { data = await res.text(); } catch (_) {}
+  function apiPut(path, body) {
+    return apiFetch("PUT", path, body);
   }
 
-  if (!res.ok) {
-    const msg = (data && data.error) ? data.error : `HTTP ${res.status}`;
-    throw new Error(msg);
+  function apiDelete(path) {
+    return apiFetch("DELETE", path);
   }
 
-  return data;
-}
+  // Expose globals expected by existing dashboard code
+  window.getBackend = getBackend;
+  window.setBackend = setBackend;
 
-export async function apiGet(path) {
-  return apiFetch(path, { method: "GET" });
-}
+  window.apiGet = apiGet;
+  window.apiPost = apiPost;
+  window.apiPut = apiPut;
+  window.apiDelete = apiDelete;
 
-export async function apiPost(path, bodyObj) {
-  return apiFetch(path, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(bodyObj || {}),
-  });
-}
+  window.LinglearAPI = {
+    DEFAULT_BACKEND: DEFAULT_BACKEND,
+    getBackend: getBackend,
+    setBackend: setBackend,
+    apiGet: apiGet,
+    apiPost: apiPost,
+    apiPut: apiPut,
+    apiDelete: apiDelete,
+  };
+})();
