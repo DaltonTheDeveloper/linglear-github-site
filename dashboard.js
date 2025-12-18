@@ -90,18 +90,23 @@
   }
 
   function getUserProfile() {
+    // NOTE: Do NOT show legacy test placeholders. Auth helper stores email in ling_auth_email.
     try {
-      const email = localStorage.getItem("linglear_email") || "user@linglear.com";
-      const name = email;
+      const email = localStorage.getItem("ling_auth_email") || "";
+      const name = email || "";
       return { name, email, sub: "Subscriber" };
     } catch {
-      return { name: "User", email: "", sub: "Subscriber" };
+      return { name: "", email: "", sub: "Subscriber" };
     }
   }
 
   function logout() {
+    // Clear all known auth tokens used across the site
     localStorage.removeItem("linglear_token");
-    localStorage.removeItem("linglear_email");
+    localStorage.removeItem("linglear_id_token");
+    localStorage.removeItem("linglear_access_token");
+    localStorage.removeItem("ling_auth_id_token");
+    localStorage.removeItem("ling_auth_email");
     toast("Logged out", "Your session has been cleared.", "good");
   }
 
@@ -120,12 +125,12 @@
     }
   }
 
-  // Populate topbar chip
+  // Populate topbar chip (boot with cached email if available, then overwrite with /api/me)
   const user = getUserProfile();
   const nameTargets = [document.getElementById("userName"), document.getElementById("username")].filter(Boolean);
-  nameTargets.forEach(el => (el.textContent = user.name));
+  nameTargets.forEach(el => (el.textContent = user.name || "Loading…"));
   const subTargets = [document.getElementById("userSub"), document.getElementById("usersub")].filter(Boolean);
-  subTargets.forEach(el => (el.textContent = user.email || user.sub || "Subscriber"));
+  subTargets.forEach(el => (el.textContent = user.email || ""));
   const avatarEl = document.getElementById("avatar");
   if (avatarEl) avatarEl.textContent = (user.name || "?").trim().slice(0, 1).toUpperCase();
 
@@ -133,31 +138,59 @@
   if (logoutButton) logoutButton.addEventListener("click", () => logout());
 
   // ✅ Backend status (REAL)
-  const BACKEND_BASE = (typeof window.LINGLEAR_API_BASE === "string" && window.LINGLEAR_API_BASE.trim() !== "")
-    ? window.LINGLEAR_API_BASE
-    : "";
-
   async function checkBackend() {
     const pill = $("#netStatus");
     try {
-      if (!BACKEND_BASE) {
-        pill.className = "pill pill-neutral";
-        pill.querySelector(".txt").textContent = "Backend: not set";
+      if (!window.LinglearAPI || typeof window.LinglearAPI.getBackend !== "function") {
+        pill.className = "pill pill-bad";
+        pill.querySelector(".txt").textContent = "Backend: client missing";
         return;
       }
-      let r = await fetch(`${BACKEND_BASE}/health`, { method: "GET" });
-      if (!r.ok) r = await fetch(`${BACKEND_BASE}/api/health`, { method: "GET" });
-      if (!r.ok) throw new Error("bad");
+
+      const base = window.LinglearAPI.getBackend();
+      const host = String(base || "").replace(/^https?:\/\//, "").replace(/\/$/, "");
+
+      // If we have a token, /api/me is the best health check. Otherwise just show configured.
+      const token =
+        localStorage.getItem("linglear_id_token") ||
+        localStorage.getItem("ling_auth_id_token") ||
+        localStorage.getItem("linglear_access_token") ||
+        "";
+
+      if (!token) {
+        pill.className = "pill pill-neutral";
+        pill.querySelector(".txt").textContent = `Backend: configured (${host})`;
+        return;
+      }
+
+      await window.LinglearAPI.apiGet("/api/me");
       pill.className = "pill pill-good";
-      const host = BACKEND_BASE.replace(/^https?:\/\//, "").replace(/\/$/, "");
       pill.querySelector(".txt").textContent = `Backend: online (${host})`;
     } catch {
+      const base = (window.LinglearAPI && window.LinglearAPI.getBackend) ? window.LinglearAPI.getBackend() : "";
+      const host = String(base || "").replace(/^https?:\/\//, "").replace(/\/$/, "");
       pill.className = "pill pill-bad";
-      pill.querySelector(".txt").textContent = "Backend: offline";
+      pill.querySelector(".txt").textContent = host ? `Backend: offline (${host})` : "Backend: offline";
     }
   }
 
+  // API client is loaded before this file; run immediately.
   checkBackend();
+
+  // Hydrate UI from backend (removes legacy/test placeholders and loads friend code)
+  (async () => {
+    const me = await loadMeFromApi();
+    if (!me) return;
+    const display = (me.display_name || me.email || "").trim();
+    const email = (me.email || "").trim();
+
+    const nameTargets = [document.getElementById("userName"), document.getElementById("username")].filter(Boolean);
+    nameTargets.forEach(el => (el.textContent = display || (email || "Subscriber")));
+    const subTargets = [document.getElementById("userSub"), document.getElementById("usersub")].filter(Boolean);
+    subTargets.forEach(el => (el.textContent = email || ""));
+    const avatarEl = document.getElementById("avatar");
+    if (avatarEl) avatarEl.textContent = (display || email || "?").trim().slice(0, 1).toUpperCase();
+  })();
 
   function refreshNavBadges() {
     $("#navStreakTag").textContent = `${state.streakDays}d`;
@@ -319,7 +352,8 @@
       }
 
       try {
-        await window.LinglearAPI.apiPost("/api/friends/request", { code });
+        // Backend endpoint: /api/friends/code (creates pending request)
+        await window.LinglearAPI.apiPost("/api/friends/code", { code });
         input.value = "";
         toast("Request sent", "Friend request is now pending.", "good");
         await refreshFriendsFromApi();
@@ -441,7 +475,7 @@
         area.querySelectorAll("[data-accept]").forEach(btn => {
           btn.addEventListener("click", async () => {
             try {
-              await window.LinglearAPI.apiPost("/api/friends/respond", { request_id: btn.getAttribute("data-accept"), action: "ACCEPT" });
+              await window.LinglearAPI.apiPost("/api/friends/accept", { request_id: btn.getAttribute("data-accept") });
               toast("Accepted", "Friend request accepted.", "good");
               await refreshFriendsFromApi();
             } catch (e) {
@@ -453,7 +487,7 @@
         area.querySelectorAll("[data-reject]").forEach(btn => {
           btn.addEventListener("click", async () => {
             try {
-              await window.LinglearAPI.apiPost("/api/friends/respond", { request_id: btn.getAttribute("data-reject"), action: "REJECT" });
+              await window.LinglearAPI.apiPost("/api/friends/decline", { request_id: btn.getAttribute("data-reject") });
               toast("Rejected", "Friend request rejected.", "good");
               await refreshFriendsFromApi();
             } catch (e) {

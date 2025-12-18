@@ -115,8 +115,11 @@
   <!-- Auth & dashboard logic -->
   <script src="auth.js"></script>
 
-  <!-- ✅ REQUIRED: API client that uses https://api.linglear.com by default -->
-  <script type="module" src="assets/api.js"></script>
+  <!-- ✅ REQUIRED: API client that uses https://api.linglear.com by default
+       IMPORTANT: must be a classic script (NOT type=module) so it runs before dashboard.js
+       and populates window.LinglearAPI / window.apiGet, etc.
+  -->
+  <script src="assets/api.js"></script>
 
   <script src="dashboard.js"></script>
 </body>
