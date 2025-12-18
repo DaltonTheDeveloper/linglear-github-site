@@ -72,6 +72,19 @@
     }, 2800);
   }
 
+// Friend code helper:
+// - Backend accepts either raw code (e.g. KTWWWG) OR LING-KTWWWG
+// - We normalize client-side so users can paste either format.
+function normalizeFriendCode(input) {
+  const raw = String(input || "").trim().toUpperCase();
+  if (!raw) return { ok: false, code: "", core: "" };
+  const core = raw.startsWith("LING-") ? raw.slice(5) : raw;
+  // Keep rules aligned with backend (/api/friends/request): 4-10 chars (A-Z0-9).
+  if (!/^[A-Z0-9]{4,10}$/.test(core)) return { ok: false, code: raw, core };
+  return { ok: true, code: core, core }; // send core only; backend also accepts LING- but core is canonical
+}
+
+
   function escapeHtml(s) {
     return String(s).replace(/[&<>"']/g, (m) => ({
       "&": "&amp;",
@@ -109,17 +122,8 @@
 
   function getUserProfile() {
     try {
-      // IMPORTANT: use the REAL stored email from the Cognito login flow.
-      // Older builds used `linglear_email`, but the live site stores:
-      //   - ling_auth_email
-      // Keep backward compatibility but prefer ling_auth_email.
-      const email =
-        localStorage.getItem("ling_auth_email") ||
-        localStorage.getItem("linglear_email") ||
-        "";
-
-      // We display the email in the UI as the primary identity.
-      const name = email || "User";
+      const email = localStorage.getItem("linglear_email") || "user@linglear.com";
+      const name = email;
       return { name, email, sub: "Subscriber" };
     } catch {
       return { name: "User", email: "", sub: "Subscriber" };
@@ -127,15 +131,8 @@
   }
 
   function logout() {
-    // Clear both legacy and current auth keys.
     localStorage.removeItem("linglear_token");
-    localStorage.removeItem("linglear_access_token");
-    localStorage.removeItem("linglear_id_token");
-    localStorage.removeItem("ling_auth_id_token");
-    localStorage.removeItem("linglear_tokens");
-
     localStorage.removeItem("linglear_email");
-    localStorage.removeItem("ling_auth_email");
     toast("Logged out", "Your session has been cleared.", "good");
   }
 
@@ -159,9 +156,7 @@
   const nameTargets = [document.getElementById("userName"), document.getElementById("username")].filter(Boolean);
   nameTargets.forEach(el => (el.textContent = user.name));
   const subTargets = [document.getElementById("userSub"), document.getElementById("usersub")].filter(Boolean);
-  // Keep the second line as a label (not a duplicate email). This prevents
-  // the UI from showing the old placeholder like user@linglear.com.
-  subTargets.forEach(el => (el.textContent = user.sub || "Subscriber"));
+  subTargets.forEach(el => (el.textContent = user.email || user.sub || "Subscriber"));
   const avatarEl = document.getElementById("avatar");
   if (avatarEl) avatarEl.textContent = (user.name || "?").trim().slice(0, 1).toUpperCase();
 
@@ -169,25 +164,23 @@
   if (logoutButton) logoutButton.addEventListener("click", () => logout());
 
   // ✅ Backend status (REAL)
-  // Backend base is provided by assets/api.js. If missing, we fall back to
-  // the default in that file.
-  // NOTE: do NOT freeze the backend base in a const, because users may switch
-  // environments (local/dev/prod) and we want the status pill to reflect it.
-  function backendBase() {
-    if (typeof window.getBackend === "function") return window.getBackend();
-    return window.LINGLEAR_API_BASE || "https://api.linglear.com";
-  }
+  const BACKEND_BASE = (typeof window.LINGLEAR_API_BASE === "string" && window.LINGLEAR_API_BASE.trim() !== "")
+    ? window.LINGLEAR_API_BASE
+    : "";
 
   async function checkBackend() {
     const pill = $("#netStatus");
     try {
-      const base = backendBase();
-      // Prefer /api/health (what the backend actually implements)
-      let r = await fetch(`${base}/api/health`, { method: "GET" });
-      if (!r.ok) r = await fetch(`${base}/health`, { method: "GET" });
+      if (!BACKEND_BASE) {
+        pill.className = "pill pill-neutral";
+        pill.querySelector(".txt").textContent = "Backend: not set";
+        return;
+      }
+      let r = await fetch(`${BACKEND_BASE}/health`, { method: "GET" });
+      if (!r.ok) r = await fetch(`${BACKEND_BASE}/api/health`, { method: "GET" });
       if (!r.ok) throw new Error("bad");
       pill.className = "pill pill-good";
-      const host = base.replace(/^https?:\/\//, "").replace(/\/$/, "");
+      const host = BACKEND_BASE.replace(/^https?:\/\//, "").replace(/\/$/, "");
       pill.querySelector(".txt").textContent = `Backend: online (${host})`;
     } catch {
       pill.className = "pill pill-bad";
@@ -351,18 +344,25 @@
       const input = $("#friendCodeInput");
       const code = (input.value || "").trim().toUpperCase();
 
-      if (!/^LING-[A-Z0-9]{6,16}$/.test(code)) {
-        toast("Invalid code", "Format should look like LING-ABC123.", "bad");
+      const parsed = normalizeFriendCode(code);
+
+      if (!parsed.ok) {
+        toast("Invalid code", "Use a friend code like KTWWWG (or LING-KTWWWG).", "bad");
         return;
       }
 
+      // Prevent adding yourself. Compare canonical core codes.
+      if ((state.friendCode || "").toUpperCase() === parsed.core) {
+        toast("Nice try", "You can’t add yourself.", "bad");
+        return;
+      }
       if ((state.friendCode || "").toUpperCase() === code) {
         toast("Nice try", "You can’t add yourself.", "bad");
         return;
       }
 
       try {
-        await window.LinglearAPI.apiPost("/api/friends/request", { code });
+        await window.LinglearAPI.apiPost("/api/friends/request", { code: parsed.code });
         input.value = "";
         toast("Request sent", "Friend request is now pending.", "good");
         await refreshFriendsFromApi();
