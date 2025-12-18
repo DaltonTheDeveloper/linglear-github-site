@@ -43,17 +43,9 @@
   }
 
   function getToken() {
-    // Prefer Cognito ID token (good for user identity: email/sub). Fall back to access token.
-    // Support legacy keys used across older dashboard builds.
     try {
       return (
-        localStorage.getItem("linglear_id_token") ||
-        localStorage.getItem("ling_auth_id_token") ||
-        localStorage.getItem("linglear_access_token") ||
         localStorage.getItem("linglear_token") ||
-        sessionStorage.getItem("linglear_id_token") ||
-        sessionStorage.getItem("ling_auth_id_token") ||
-        sessionStorage.getItem("linglear_access_token") ||
         sessionStorage.getItem("linglear_token") ||
         ""
       );

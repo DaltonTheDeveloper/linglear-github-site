@@ -38,6 +38,24 @@
 
   const state = loadState();
 
+  // Friends page: polling so incoming requests appear without a full reload.
+  // Runs only while the Friends route is active.
+  let friendsPollTimer = null;
+  function stopFriendsPolling() {
+    if (friendsPollTimer) {
+      clearInterval(friendsPollTimer);
+      friendsPollTimer = null;
+    }
+  }
+  function startFriendsPolling() {
+    stopFriendsPolling();
+    friendsPollTimer = setInterval(() => {
+      if (state.route === 'friends' && document.visibilityState === 'visible') {
+        refreshFriendsFromApi();
+      }
+    }, 4000);
+  }
+
   // DOM helpers
   const $ = (sel) => document.querySelector(sel);
   const $$ = (sel) => Array.from(document.querySelectorAll(sel));
@@ -133,9 +151,9 @@
   if (logoutButton) logoutButton.addEventListener("click", () => logout());
 
   // ✅ Backend status (REAL)
-  const BACKEND_BASE = (window.LinglearAPI && typeof window.LinglearAPI.getBackend === "function")
-    ? window.LinglearAPI.getBackend()
-    : "https://api.linglear.com";
+  const BACKEND_BASE = (typeof window.LINGLEAR_API_BASE === "string" && window.LINGLEAR_API_BASE.trim() !== "")
+    ? window.LINGLEAR_API_BASE
+    : "";
 
   async function checkBackend() {
     const pill = $("#netStatus");
@@ -169,9 +187,7 @@
   refreshNavBadges();
 
   // Routing
-    let friendsPollTimer = null;
-
-const views = {
+  const views = {
     overview: $("#view-overview"),
     friends: $("#view-friends"),
     votes: $("#view-votes"),
@@ -181,12 +197,13 @@ const views = {
   function setActiveRoute(route) {
     $$(".navitem").forEach(a => a.classList.toggle("active", a.dataset.route === route));
     Object.entries(views).forEach(([k, el]) => el.classList.toggle("active", k === route));
-    if (route !== "friends" && friendsPollTimer) { clearInterval(friendsPollTimer); friendsPollTimer = null; }
+
+    // Only poll friends while the friends route is active.
+    if (route === "friends") startFriendsPolling();
+    else stopFriendsPolling();
+
     if (route === "overview") renderOverview();
-    if (route === "friends") {
-      renderFriends();
-      if (!friendsPollTimer) friendsPollTimer = setInterval(() => { refreshFriendsFromApi().catch(() => {}); }, 5000);
-    }
+    if (route === "friends") renderFriends();
     if (route === "votes") renderVotes();
     if (route === "community") renderCommunity();
   }
@@ -348,7 +365,6 @@ const views = {
         const blocked = Array.isArray(data.blocked) ? data.blocked : [];
 
         state.friends = friends.map(f => ({
-          user_id: f.friend_id || f.user_id || null,
           name: f.display_name || f.email || "Friend",
           code: f.code || "",
           sinceTs: Date.now()
@@ -370,7 +386,10 @@ const views = {
                   ${friends.map((f) => `
                     <tr>
                       <td><b>${escapeHtml(f.display_name || f.email || "Friend")}</b><div class="muted small">${escapeHtml(f.code || "")}</div></td>
-                      <td style="text-align:right"><button class="btn btn-ghost" data-block="${escapeHtml(String(f.user_id || ""))}">Block</button></td>
+                      <td style="text-align:right">
+                        <button class="btn btn-ghost" data-unfriend="${escapeHtml(String(f.friend_id || ""))}">Unfriend</button>
+                        <button class="btn btn-ghost" data-block="${escapeHtml(String(f.friend_id || ""))}">Block</button>
+                      </td>
                     </tr>
                   `).join("")}
                 </tbody>
@@ -433,7 +452,7 @@ const views = {
                   ${blocked.map((b) => `
                     <tr>
                       <td><b>${escapeHtml(b.display_name || b.email || "User")}</b></td>
-                      <td style="text-align:right"><button class="btn btn-ghost" data-unblock="${escapeHtml(String(b.user_id || ""))}">Unblock</button></td>
+                      <td style="text-align:right"><button class="btn btn-ghost" data-unblock="${escapeHtml(String(b.friend_id || ""))}">Unblock</button></td>
                     </tr>
                   `).join("")}
                 </tbody>
@@ -472,8 +491,20 @@ const views = {
         area.querySelectorAll("[data-block]").forEach(btn => {
           btn.addEventListener("click", async () => {
             try {
-              await window.LinglearAPI.apiPost("/api/friends/block", { user_id: btn.getAttribute("data-block") });
+              await window.LinglearAPI.apiPost("/api/friends/block", { friend_id: btn.getAttribute("data-block") });
               toast("Blocked", "User blocked.", "good");
+              await refreshFriendsFromApi();
+            } catch (e) {
+              toast("Failed", String(e.message || e), "bad");
+            }
+          });
+        });
+
+        area.querySelectorAll("[data-unfriend]").forEach(btn => {
+          btn.addEventListener("click", async () => {
+            try {
+              await window.LinglearAPI.apiPost("/api/friends/unfriend", { friend_id: btn.getAttribute("data-unfriend") });
+              toast("Unfriended", "Friend removed.", "good");
               await refreshFriendsFromApi();
             } catch (e) {
               toast("Failed", String(e.message || e), "bad");
@@ -484,7 +515,7 @@ const views = {
         area.querySelectorAll("[data-unblock]").forEach(btn => {
           btn.addEventListener("click", async () => {
             try {
-              await window.LinglearAPI.apiPost("/api/friends/unblock", { user_id: btn.getAttribute("data-unblock") });
+              await window.LinglearAPI.apiPost("/api/friends/unblock", { friend_id: btn.getAttribute("data-unblock") });
               toast("Unblocked", "User unblocked.", "good");
               await refreshFriendsFromApi();
             } catch (e) {
@@ -492,50 +523,6 @@ const views = {
             }
           });
         });
-
-    area.querySelectorAll("[data-unfriend]").forEach((btn) => {
-      btn.addEventListener("click", async () => {
-        const friend_user_id = Number(btn.dataset.unfriend);
-        if (!Number.isFinite(friend_user_id)) return;
-        if (!confirm("Remove this friend?")) return;
-        const res = await apiPost("/api/friends/remove", { friend_user_id });
-        if (!res.ok) return toast(`Failed: ${res.text || res.status}`);
-        await refreshFriendsFromApi();
-      });
-    });
-
-    area.querySelectorAll("[data-cancel]").forEach((btn) => {
-      btn.addEventListener("click", async () => {
-        const request_id = Number(btn.dataset.cancel);
-        if (!Number.isFinite(request_id)) return;
-        if (!confirm("Revoke this request?")) return;
-        const res = await apiPost("/api/friends/cancel", { request_id });
-        if (!res.ok) return toast(`Failed: ${res.text || res.status}`);
-        await refreshFriendsFromApi();
-      });
-    });
-
-    area.querySelectorAll("[data-unfriend]").forEach((btn) => {
-      btn.addEventListener("click", async () => {
-        const friend_user_id = Number(btn.dataset.unfriend);
-        if (!Number.isFinite(friend_user_id)) return;
-        if (!confirm("Remove this friend?")) return;
-        const res = await apiPost("/api/friends/remove", { friend_user_id });
-        if (!res.ok) return toast(`Failed: ${res.text || res.status}`);
-        await refreshFriendsFromApi();
-      });
-    });
-
-    area.querySelectorAll("[data-cancel]").forEach((btn) => {
-      btn.addEventListener("click", async () => {
-        const request_id = Number(btn.dataset.cancel);
-        if (!Number.isFinite(request_id)) return;
-        if (!confirm("Revoke this request?")) return;
-        const res = await apiPost("/api/friends/cancel", { request_id });
-        if (!res.ok) return toast(`Failed: ${res.text || res.status}`);
-        await refreshFriendsFromApi();
-      });
-    });
 
       } catch (e) {
         const area = $("#friendsTableArea");
@@ -545,19 +532,7 @@ const views = {
     }
 
     refreshFriendsFromApi();
-  
-  // Auto-refresh on Friends page so invites appear without reload
-  if (friendsPollTimer) clearInterval(friendsPollTimer);
-  friendsPollTimer = setInterval(async () => {
-    try {
-      if (location.hash.includes("#/friends")) {
-        await refreshFriendsFromApi();
-        renderFriends();
-      }
-    } catch (_) {}
-  }, 4000);
-
-}
+  }
 
   function renderVotes() {
     const el = views.votes;
@@ -586,16 +561,4 @@ const views = {
       </div>
     `;
   }
-})()
-    if (btn.dataset.unfriend) {
-      try {
-        await window.LinglearAPI.apiPost("/api/friends/unfriend", { friend_id: Number(btn.dataset.unfriend) });
-        toast("Removed friend");
-        await refreshFriendsFromApi();
-        renderFriends();
-      } catch (e) {
-        toast(`Failed\n${e?.message || e}`);
-      }
-      return;
-    }
-;
+})();
