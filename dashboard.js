@@ -545,7 +545,19 @@ const views = {
     }
 
     refreshFriendsFromApi();
-  }
+  
+  // Auto-refresh on Friends page so invites appear without reload
+  if (friendsPollTimer) clearInterval(friendsPollTimer);
+  friendsPollTimer = setInterval(async () => {
+    try {
+      if (location.hash.includes("#/friends")) {
+        await refreshFriendsFromApi();
+        renderFriends();
+      }
+    } catch (_) {}
+  }, 4000);
+
+}
 
   function renderVotes() {
     const el = views.votes;
@@ -574,4 +586,16 @@ const views = {
       </div>
     `;
   }
-})();
+})()
+    if (btn.dataset.unfriend) {
+      try {
+        await window.LinglearAPI.apiPost("/api/friends/unfriend", { friend_id: Number(btn.dataset.unfriend) });
+        toast("Removed friend");
+        await refreshFriendsFromApi();
+        renderFriends();
+      } catch (e) {
+        toast(`Failed\n${e?.message || e}`);
+      }
+      return;
+    }
+;
