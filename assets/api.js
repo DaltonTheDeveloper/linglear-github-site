@@ -29,6 +29,69 @@
     return url;
   }
 
+  // ---- Auth token helpers (AI-friendly) ------------------------------------
+  // We store Cognito tokens in localStorage. These tokens expire.
+  // If expired, we clear them and force the user back to /login.html so they
+  // can re-authenticate cleanly.
+  function _b64UrlDecode(str) {
+    try {
+      str = str.replace(/-/g, "+").replace(/_/g, "/");
+      // pad
+      while (str.length % 4) str += "=";
+      return atob(str);
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function _parseJwt(token) {
+    try {
+      if (!token || token.split(".").length < 2) return null;
+      var payload = token.split(".")[1];
+      var json = _b64UrlDecode(payload);
+      if (!json) return null;
+      return JSON.parse(json);
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function _isExpiredJwt(token, skewSeconds) {
+    var p = _parseJwt(token);
+    if (!p || !p.exp) return false; // if unknown, let backend decide
+    var skew = (typeof skewSeconds === "number" ? skewSeconds : 30);
+    var now = Math.floor(Date.now() / 1000);
+    return (now + skew) >= p.exp;
+  }
+
+  function _clearAuthStorage() {
+    try {
+      var keys = [
+        "linglear_access_token",
+        "linglear_id_token",
+        "linglear_refresh_token",
+        "linglear_tokens",
+        "ling_auth_id_token",
+        "ling_auth_access_token",
+        "ling_auth_refresh_token",
+        "ling_auth_email",
+        "linglear_email"
+      ];
+      keys.forEach(function (k) { localStorage.removeItem(k); });
+    } catch (e) {}
+  }
+
+  function _forceRelogin(message) {
+    try {
+      if (message) window.toast && window.toast(message);
+    } catch (e) {}
+    _clearAuthStorage();
+    // Preserve where they were so login can bounce them back if you want.
+    try { sessionStorage.setItem("post_login_redirect", window.location.href); } catch (e) {}
+    window.location.href = "/login.html";
+  }
+
+
   function getBackend() {
     try {
       var saved = localStorage.getItem(STORAGE_KEY);
@@ -70,7 +133,14 @@
         sessionStorage.getItem("linglear_token") ||
         "";
 
-      if (t) return t;
+      if (t) {
+        // If token is expired, force a clean re-login.
+        if (_isExpiredJwt(t, 30)) {
+          _forceRelogin('Session expired. Please log in again.');
+          return '';
+        }
+        return t;
+      }
 
       // JSON bundle key (some flows store all tokens in one JSON value)
       var packed = localStorage.getItem("linglear_tokens") || "";
@@ -115,6 +185,14 @@
     }
 
     if (!res.ok) {
+      // If Cognito token is expired/invalid, force re-login (no silent failures).
+      if (res.status === 401) {
+        var rawMsg = (data && (data.error || data.message)) || "";
+        var rawText = (typeof rawMsg === "string" ? rawMsg : JSON.stringify(rawMsg));
+        if (/token expired|jwt expired|expired/i.test(rawText)) {
+          _forceRelogin('Session expired. Please log in again.');
+        }
+      }
       var msg =
         (data && (data.error || data.message)) ||
         ("HTTP " + res.status + " " + res.statusText);
