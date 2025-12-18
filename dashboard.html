@@ -116,7 +116,10 @@
   <script src="auth.js"></script>
 
   <!-- ✅ REQUIRED: API client that uses https://api.linglear.com by default -->
-  <script type="module" src="assets/api.js"></script>
+  <!-- IMPORTANT: this must be a classic script (NOT type=module) so it runs
+       before dashboard.js. Module scripts are deferred and can cause
+       window.LinglearAPI/apiGet to be undefined at runtime. -->
+  <script src="assets/api.js"></script>
 
   <script src="dashboard.js"></script>
 </body>

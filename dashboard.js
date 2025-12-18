@@ -72,58 +72,6 @@
     }, 2800);
   }
 
-  // ---------------------------------------------------------------------------
-  // Lightweight modal (used for friend "View Shared" and other quick popups)
-  // ---------------------------------------------------------------------------
-  function ensureModal() {
-    let overlay = document.getElementById("modalOverlay");
-    if (overlay) return overlay;
-
-    overlay = document.createElement("div");
-    overlay.id = "modalOverlay";
-    overlay.className = "overlay hidden";
-    overlay.setAttribute("role", "dialog");
-    overlay.setAttribute("aria-modal", "true");
-
-    overlay.innerHTML = `
-      <div class="cmd" style="max-width:720px">
-        <div class="row" style="align-items:center; gap:10px">
-          <h3 id="modalTitle" style="margin:0; font-size:18px"></h3>
-          <div class="grow"></div>
-          <button class="btn btn-ghost btn-xs" id="modalCloseBtn">Close</button>
-        </div>
-        <div class="hr" style="margin:10px 0"></div>
-        <div id="modalBody"></div>
-        <div class="muted small" style="margin-top:10px">Tip: press <b>Esc</b> to close.</div>
-      </div>
-    `;
-    document.body.appendChild(overlay);
-
-    function close() {
-      overlay.classList.add("hidden");
-    }
-
-    overlay.addEventListener("click", (e) => {
-      if (e.target === overlay) close();
-    });
-
-    overlay.querySelector("#modalCloseBtn").addEventListener("click", close);
-
-    document.addEventListener("keydown", (e) => {
-      if (e.key === "Escape") close();
-    });
-
-    return overlay;
-  }
-
-  function showModal(title, html) {
-    const overlay = ensureModal();
-    overlay.querySelector("#modalTitle").textContent = title || "Details";
-    overlay.querySelector("#modalBody").innerHTML = html || "";
-    overlay.classList.remove("hidden");
-  }
-
-
   function escapeHtml(s) {
     return String(s).replace(/[&<>"']/g, (m) => ({
       "&": "&amp;",
@@ -161,8 +109,17 @@
 
   function getUserProfile() {
     try {
-      const email = localStorage.getItem("linglear_email") || "user@linglear.com";
-      const name = email;
+      // IMPORTANT: use the REAL stored email from the Cognito login flow.
+      // Older builds used `linglear_email`, but the live site stores:
+      //   - ling_auth_email
+      // Keep backward compatibility but prefer ling_auth_email.
+      const email =
+        localStorage.getItem("ling_auth_email") ||
+        localStorage.getItem("linglear_email") ||
+        "";
+
+      // We display the email in the UI as the primary identity.
+      const name = email || "User";
       return { name, email, sub: "Subscriber" };
     } catch {
       return { name: "User", email: "", sub: "Subscriber" };
@@ -170,8 +127,15 @@
   }
 
   function logout() {
+    // Clear both legacy and current auth keys.
     localStorage.removeItem("linglear_token");
+    localStorage.removeItem("linglear_access_token");
+    localStorage.removeItem("linglear_id_token");
+    localStorage.removeItem("ling_auth_id_token");
+    localStorage.removeItem("linglear_tokens");
+
     localStorage.removeItem("linglear_email");
+    localStorage.removeItem("ling_auth_email");
     toast("Logged out", "Your session has been cleared.", "good");
   }
 
@@ -195,7 +159,9 @@
   const nameTargets = [document.getElementById("userName"), document.getElementById("username")].filter(Boolean);
   nameTargets.forEach(el => (el.textContent = user.name));
   const subTargets = [document.getElementById("userSub"), document.getElementById("usersub")].filter(Boolean);
-  subTargets.forEach(el => (el.textContent = user.email || user.sub || "Subscriber"));
+  // Keep the second line as a label (not a duplicate email). This prevents
+  // the UI from showing the old placeholder like user@linglear.com.
+  subTargets.forEach(el => (el.textContent = user.sub || "Subscriber"));
   const avatarEl = document.getElementById("avatar");
   if (avatarEl) avatarEl.textContent = (user.name || "?").trim().slice(0, 1).toUpperCase();
 
@@ -203,23 +169,25 @@
   if (logoutButton) logoutButton.addEventListener("click", () => logout());
 
   // ✅ Backend status (REAL)
-  const BACKEND_BASE = (typeof window.LINGLEAR_API_BASE === "string" && window.LINGLEAR_API_BASE.trim() !== "")
-    ? window.LINGLEAR_API_BASE
-    : "";
+  // Backend base is provided by assets/api.js. If missing, we fall back to
+  // the default in that file.
+  // NOTE: do NOT freeze the backend base in a const, because users may switch
+  // environments (local/dev/prod) and we want the status pill to reflect it.
+  function backendBase() {
+    if (typeof window.getBackend === "function") return window.getBackend();
+    return window.LINGLEAR_API_BASE || "https://api.linglear.com";
+  }
 
   async function checkBackend() {
     const pill = $("#netStatus");
     try {
-      if (!BACKEND_BASE) {
-        pill.className = "pill pill-neutral";
-        pill.querySelector(".txt").textContent = "Backend: not set";
-        return;
-      }
-      let r = await fetch(`${BACKEND_BASE}/health`, { method: "GET" });
-      if (!r.ok) r = await fetch(`${BACKEND_BASE}/api/health`, { method: "GET" });
+      const base = backendBase();
+      // Prefer /api/health (what the backend actually implements)
+      let r = await fetch(`${base}/api/health`, { method: "GET" });
+      if (!r.ok) r = await fetch(`${base}/health`, { method: "GET" });
       if (!r.ok) throw new Error("bad");
       pill.className = "pill pill-good";
-      const host = BACKEND_BASE.replace(/^https?:\/\//, "").replace(/\/$/, "");
+      const host = base.replace(/^https?:\/\//, "").replace(/\/$/, "");
       pill.querySelector(".txt").textContent = `Backend: online (${host})`;
     } catch {
       pill.className = "pill pill-bad";
