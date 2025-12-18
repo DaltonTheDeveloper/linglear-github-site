@@ -133,9 +133,9 @@
   if (logoutButton) logoutButton.addEventListener("click", () => logout());
 
   // ✅ Backend status (REAL)
-  const BACKEND_BASE = (typeof window.LINGLEAR_API_BASE === "string" && window.LINGLEAR_API_BASE.trim() !== "")
-    ? window.LINGLEAR_API_BASE
-    : "";
+  const BACKEND_BASE = (window.LinglearAPI && typeof window.LinglearAPI.getBackend === "function")
+    ? window.LinglearAPI.getBackend()
+    : "https://api.linglear.com";
 
   async function checkBackend() {
     const pill = $("#netStatus");
@@ -169,41 +169,24 @@
   refreshNavBadges();
 
   // Routing
-  let friendsPollTimer = null;
+    let friendsPollTimer = null;
 
-  const views = {
+const views = {
     overview: $("#view-overview"),
     friends: $("#view-friends"),
     votes: $("#view-votes"),
     community: $("#view-community")
   };
 
-  
-  function stopFriendsPolling() {
-    if (friendsPollTimer) {
-      clearInterval(friendsPollTimer);
-      friendsPollTimer = null;
-    }
-  }
-
-  function startFriendsPolling() {
-    stopFriendsPolling();
-    // Poll lightly so incoming requests show without reload
-    friendsPollTimer = setInterval(async () => {
-      try {
-        if (getRoute() !== "friends") return;
-        await refreshFriendsFromApi();
-      } catch (_) {
-        // ignore transient failures
-      }
-    }, 5000);
-  }
-
-function setActiveRoute(route) {
+  function setActiveRoute(route) {
     $$(".navitem").forEach(a => a.classList.toggle("active", a.dataset.route === route));
     Object.entries(views).forEach(([k, el]) => el.classList.toggle("active", k === route));
+    if (route !== "friends" && friendsPollTimer) { clearInterval(friendsPollTimer); friendsPollTimer = null; }
     if (route === "overview") renderOverview();
-    if (route === "friends") { renderFriends(); startFriendsPolling(); } else { stopFriendsPolling(); }
+    if (route === "friends") {
+      renderFriends();
+      if (!friendsPollTimer) friendsPollTimer = setInterval(() => { refreshFriendsFromApi().catch(() => {}); }, 5000);
+    }
     if (route === "votes") renderVotes();
     if (route === "community") renderCommunity();
   }
@@ -296,10 +279,9 @@ function setActiveRoute(route) {
           <div class="muted">Enter their friend code to connect.</div>
           <div class="hr"></div>
           <div class="row">
-            <input class="input" id="friendCodeInput" placeholder="83V4Q2  (or LING-83V4Q2)" />
+            <input class="input" id="friendCodeInput" placeholder="LING-XXXXXX" />
             <button class="btn btn-primary" id="btnAddFriend">Add</button>
           </div>
-          <div id="friendLookup" class="muted small" style="margin-top:10px"></div>
           <div class="muted small" style="margin-top:10px">
             This will create a <b>pending</b> request the receiver must accept.
           </div>
@@ -330,69 +312,27 @@ function setActiveRoute(route) {
 
     $("#btnAddFriend").addEventListener("click", async () => {
       const input = $("#friendCodeInput");
-      const raw = (input.value || "").trim().toUpperCase();
-      const norm = raw.startsWith("LING-") ? raw.slice(5) : raw;
+      const code = (input.value || "").trim().toUpperCase();
 
-      if (!/^[A-Z0-9]{6,16}$/.test(norm)) {
-        toast(
-          "Invalid code",
-          "Paste a code like 83V4Q2 (or LING-83V4Q2).",
-          "bad"
-        );
+      if (!/^LING-[A-Z0-9]{6,16}$/.test(code)) {
+        toast("Invalid code", "Format should look like LING-ABC123.", "bad");
         return;
       }
 
-      if ((state.friendCode || "").trim().toUpperCase() === norm) {
+      if ((state.friendCode || "").toUpperCase() === code) {
         toast("Nice try", "You can’t add yourself.", "bad");
         return;
       }
 
       try {
-        await window.LinglearAPI.apiPost("/api/friends/request", { code: norm });
+        await window.LinglearAPI.apiPost("/api/friends/request", { code });
         input.value = "";
-        const lookupEl = document.getElementById("friendLookup");
-        if (lookupEl) lookupEl.textContent = "";
         toast("Request sent", "Friend request is now pending.", "good");
         await refreshFriendsFromApi();
       } catch (e) {
         toast("Failed", String(e.message || e), "bad");
       }
     });
-
-    // Live lookup so user can verify they’re adding the right person
-    (function setupFriendLookup() {
-      const input = document.getElementById("friendCodeInput");
-      const lookupEl = document.getElementById("friendLookup");
-      if (!input || !lookupEl) return;
-
-      let t = null;
-      input.addEventListener("input", () => {
-        if (t) clearTimeout(t);
-        const raw = (input.value || "").trim().toUpperCase();
-        const norm = raw.startsWith("LING-") ? raw.slice(5) : raw;
-        if (!norm) {
-          lookupEl.textContent = "";
-          return;
-        }
-        if (!/^[A-Z0-9]{6,16}$/.test(norm)) {
-          lookupEl.textContent = "";
-          return;
-        }
-        lookupEl.textContent = "Looking up user…";
-        t = setTimeout(async () => {
-          try {
-            const u = await window.LinglearAPI.apiGet(
-              "/api/friends/lookup?code=" + encodeURIComponent(norm)
-            );
-            const name = (u && (u.display_name || u.email)) || "User";
-            const email = (u && u.email) || "";
-            lookupEl.textContent = "Will request: " + name + (email && name !== email ? " (" + email + ")" : "");
-          } catch (e) {
-            lookupEl.textContent = "No user found for that code.";
-          }
-        }, 250);
-      });
-    })();
 
     async function refreshFriendsFromApi() {
       await loadMeFromApi();
@@ -408,6 +348,7 @@ function setActiveRoute(route) {
         const blocked = Array.isArray(data.blocked) ? data.blocked : [];
 
         state.friends = friends.map(f => ({
+          user_id: f.friend_id || f.user_id || null,
           name: f.display_name || f.email || "Friend",
           code: f.code || "",
           sinceTs: Date.now()
@@ -428,8 +369,8 @@ function setActiveRoute(route) {
                 <tbody>
                   ${friends.map((f) => `
                     <tr>
-                      <td><b>${escapeHtml(f.display_name || f.email || "Friend")}</b><div class="muted small">${escapeHtml(f.email || "")}</div></td>
-                      <td style="text-align:right"><button class="btn btn-ghost" data-remove="${escapeHtml(String(f.friend_id || ""))}">Unfriend</button> <button class="btn btn-ghost" data-block="${escapeHtml(String(f.friend_id || ""))}">Block</button></td>
+                      <td><b>${escapeHtml(f.display_name || f.email || "Friend")}</b><div class="muted small">${escapeHtml(f.code || "")}</div></td>
+                      <td style="text-align:right"><button class="btn btn-ghost" data-block="${escapeHtml(String(f.user_id || ""))}">Block</button></td>
                     </tr>
                   `).join("")}
                 </tbody>
@@ -492,7 +433,7 @@ function setActiveRoute(route) {
                   ${blocked.map((b) => `
                     <tr>
                       <td><b>${escapeHtml(b.display_name || b.email || "User")}</b></td>
-                      <td style="text-align:right"><button class="btn btn-ghost" data-unblock="${escapeHtml(String(b.friend_id || ""))}">Unblock</button></td>
+                      <td style="text-align:right"><button class="btn btn-ghost" data-unblock="${escapeHtml(String(b.user_id || ""))}">Unblock</button></td>
                     </tr>
                   `).join("")}
                 </tbody>
@@ -507,7 +448,7 @@ function setActiveRoute(route) {
         area.querySelectorAll("[data-accept]").forEach(btn => {
           btn.addEventListener("click", async () => {
             try {
-              await window.LinglearAPI.apiPost("/api/friends/accept", { request_id: btn.getAttribute("data-accept") });
+              await window.LinglearAPI.apiPost("/api/friends/respond", { request_id: btn.getAttribute("data-accept"), action: "ACCEPT" });
               toast("Accepted", "Friend request accepted.", "good");
               await refreshFriendsFromApi();
             } catch (e) {
@@ -519,7 +460,7 @@ function setActiveRoute(route) {
         area.querySelectorAll("[data-reject]").forEach(btn => {
           btn.addEventListener("click", async () => {
             try {
-              await window.LinglearAPI.apiPost("/api/friends/decline", { request_id: btn.getAttribute("data-reject") });
+              await window.LinglearAPI.apiPost("/api/friends/respond", { request_id: btn.getAttribute("data-reject"), action: "REJECT" });
               toast("Rejected", "Friend request rejected.", "good");
               await refreshFriendsFromApi();
             } catch (e) {
@@ -540,23 +481,10 @@ function setActiveRoute(route) {
           });
         });
 
-        
-        area.querySelectorAll("[data-remove]").forEach(btn => {
+        area.querySelectorAll("[data-unblock]").forEach(btn => {
           btn.addEventListener("click", async () => {
             try {
-              await window.LinglearAPI.apiPost("/api/friends/remove", { friend_id: btn.getAttribute("data-remove") });
-              toast("Removed", "Friend removed.", "good");
-              await refreshFriendsFromApi();
-            } catch (e) {
-              toast("Failed", String(e.message || e), "bad");
-            }
-          });
-        });
-
-area.querySelectorAll("[data-unblock]").forEach(btn => {
-          btn.addEventListener("click", async () => {
-            try {
-              await window.LinglearAPI.apiPost("/api/friends/unblock", { friend_id: btn.getAttribute("data-unblock") });
+              await window.LinglearAPI.apiPost("/api/friends/unblock", { user_id: btn.getAttribute("data-unblock") });
               toast("Unblocked", "User unblocked.", "good");
               await refreshFriendsFromApi();
             } catch (e) {
@@ -564,6 +492,50 @@ area.querySelectorAll("[data-unblock]").forEach(btn => {
             }
           });
         });
+
+    area.querySelectorAll("[data-unfriend]").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const friend_user_id = Number(btn.dataset.unfriend);
+        if (!Number.isFinite(friend_user_id)) return;
+        if (!confirm("Remove this friend?")) return;
+        const res = await apiPost("/api/friends/remove", { friend_user_id });
+        if (!res.ok) return toast(`Failed: ${res.text || res.status}`);
+        await refreshFriendsFromApi();
+      });
+    });
+
+    area.querySelectorAll("[data-cancel]").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const request_id = Number(btn.dataset.cancel);
+        if (!Number.isFinite(request_id)) return;
+        if (!confirm("Revoke this request?")) return;
+        const res = await apiPost("/api/friends/cancel", { request_id });
+        if (!res.ok) return toast(`Failed: ${res.text || res.status}`);
+        await refreshFriendsFromApi();
+      });
+    });
+
+    area.querySelectorAll("[data-unfriend]").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const friend_user_id = Number(btn.dataset.unfriend);
+        if (!Number.isFinite(friend_user_id)) return;
+        if (!confirm("Remove this friend?")) return;
+        const res = await apiPost("/api/friends/remove", { friend_user_id });
+        if (!res.ok) return toast(`Failed: ${res.text || res.status}`);
+        await refreshFriendsFromApi();
+      });
+    });
+
+    area.querySelectorAll("[data-cancel]").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const request_id = Number(btn.dataset.cancel);
+        if (!Number.isFinite(request_id)) return;
+        if (!confirm("Revoke this request?")) return;
+        const res = await apiPost("/api/friends/cancel", { request_id });
+        if (!res.ok) return toast(`Failed: ${res.text || res.status}`);
+        await refreshFriendsFromApi();
+      });
+    });
 
       } catch (e) {
         const area = $("#friendsTableArea");
