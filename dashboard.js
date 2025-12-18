@@ -169,6 +169,8 @@
   refreshNavBadges();
 
   // Routing
+  let friendsPollTimer = null;
+
   const views = {
     overview: $("#view-overview"),
     friends: $("#view-friends"),
@@ -176,11 +178,32 @@
     community: $("#view-community")
   };
 
-  function setActiveRoute(route) {
+  
+  function stopFriendsPolling() {
+    if (friendsPollTimer) {
+      clearInterval(friendsPollTimer);
+      friendsPollTimer = null;
+    }
+  }
+
+  function startFriendsPolling() {
+    stopFriendsPolling();
+    // Poll lightly so incoming requests show without reload
+    friendsPollTimer = setInterval(async () => {
+      try {
+        if (getRoute() !== "friends") return;
+        await refreshFriendsFromApi();
+      } catch (_) {
+        // ignore transient failures
+      }
+    }, 5000);
+  }
+
+function setActiveRoute(route) {
     $$(".navitem").forEach(a => a.classList.toggle("active", a.dataset.route === route));
     Object.entries(views).forEach(([k, el]) => el.classList.toggle("active", k === route));
     if (route === "overview") renderOverview();
-    if (route === "friends") renderFriends();
+    if (route === "friends") { renderFriends(); startFriendsPolling(); } else { stopFriendsPolling(); }
     if (route === "votes") renderVotes();
     if (route === "community") renderCommunity();
   }
@@ -406,7 +429,7 @@
                   ${friends.map((f) => `
                     <tr>
                       <td><b>${escapeHtml(f.display_name || f.email || "Friend")}</b><div class="muted small">${escapeHtml(f.email || "")}</div></td>
-                      <td style="text-align:right"><button class="btn btn-ghost" data-block="${escapeHtml(String(f.friend_id || ""))}">Block</button></td>
+                      <td style="text-align:right"><button class="btn btn-ghost" data-remove="${escapeHtml(String(f.friend_id || ""))}">Unfriend</button> <button class="btn btn-ghost" data-block="${escapeHtml(String(f.friend_id || ""))}">Block</button></td>
                     </tr>
                   `).join("")}
                 </tbody>
@@ -469,7 +492,7 @@
                   ${blocked.map((b) => `
                     <tr>
                       <td><b>${escapeHtml(b.display_name || b.email || "User")}</b></td>
-                      <td style="text-align:right"><button class="btn btn-ghost" data-unblock="${escapeHtml(String(b.user_id || ""))}">Unblock</button></td>
+                      <td style="text-align:right"><button class="btn btn-ghost" data-unblock="${escapeHtml(String(b.friend_id || ""))}">Unblock</button></td>
                     </tr>
                   `).join("")}
                 </tbody>
@@ -484,7 +507,7 @@
         area.querySelectorAll("[data-accept]").forEach(btn => {
           btn.addEventListener("click", async () => {
             try {
-              await window.LinglearAPI.apiPost("/api/friends/respond", { request_id: btn.getAttribute("data-accept"), action: "ACCEPT" });
+              await window.LinglearAPI.apiPost("/api/friends/accept", { request_id: btn.getAttribute("data-accept") });
               toast("Accepted", "Friend request accepted.", "good");
               await refreshFriendsFromApi();
             } catch (e) {
@@ -496,7 +519,7 @@
         area.querySelectorAll("[data-reject]").forEach(btn => {
           btn.addEventListener("click", async () => {
             try {
-              await window.LinglearAPI.apiPost("/api/friends/respond", { request_id: btn.getAttribute("data-reject"), action: "REJECT" });
+              await window.LinglearAPI.apiPost("/api/friends/decline", { request_id: btn.getAttribute("data-reject") });
               toast("Rejected", "Friend request rejected.", "good");
               await refreshFriendsFromApi();
             } catch (e) {
@@ -517,10 +540,23 @@
           });
         });
 
-        area.querySelectorAll("[data-unblock]").forEach(btn => {
+        
+        area.querySelectorAll("[data-remove]").forEach(btn => {
           btn.addEventListener("click", async () => {
             try {
-              await window.LinglearAPI.apiPost("/api/friends/unblock", { user_id: btn.getAttribute("data-unblock") });
+              await window.LinglearAPI.apiPost("/api/friends/remove", { friend_id: btn.getAttribute("data-remove") });
+              toast("Removed", "Friend removed.", "good");
+              await refreshFriendsFromApi();
+            } catch (e) {
+              toast("Failed", String(e.message || e), "bad");
+            }
+          });
+        });
+
+area.querySelectorAll("[data-unblock]").forEach(btn => {
+          btn.addEventListener("click", async () => {
+            try {
+              await window.LinglearAPI.apiPost("/api/friends/unblock", { friend_id: btn.getAttribute("data-unblock") });
               toast("Unblocked", "User unblocked.", "good");
               await refreshFriendsFromApi();
             } catch (e) {
