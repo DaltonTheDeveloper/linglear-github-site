@@ -72,6 +72,58 @@
     }, 2800);
   }
 
+  // ---------------------------------------------------------------------------
+  // Lightweight modal (used for friend "View Shared" and other quick popups)
+  // ---------------------------------------------------------------------------
+  function ensureModal() {
+    let overlay = document.getElementById("modalOverlay");
+    if (overlay) return overlay;
+
+    overlay = document.createElement("div");
+    overlay.id = "modalOverlay";
+    overlay.className = "overlay hidden";
+    overlay.setAttribute("role", "dialog");
+    overlay.setAttribute("aria-modal", "true");
+
+    overlay.innerHTML = `
+      <div class="cmd" style="max-width:720px">
+        <div class="row" style="align-items:center; gap:10px">
+          <h3 id="modalTitle" style="margin:0; font-size:18px"></h3>
+          <div class="grow"></div>
+          <button class="btn btn-ghost btn-xs" id="modalCloseBtn">Close</button>
+        </div>
+        <div class="hr" style="margin:10px 0"></div>
+        <div id="modalBody"></div>
+        <div class="muted small" style="margin-top:10px">Tip: press <b>Esc</b> to close.</div>
+      </div>
+    `;
+    document.body.appendChild(overlay);
+
+    function close() {
+      overlay.classList.add("hidden");
+    }
+
+    overlay.addEventListener("click", (e) => {
+      if (e.target === overlay) close();
+    });
+
+    overlay.querySelector("#modalCloseBtn").addEventListener("click", close);
+
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") close();
+    });
+
+    return overlay;
+  }
+
+  function showModal(title, html) {
+    const overlay = ensureModal();
+    overlay.querySelector("#modalTitle").textContent = title || "Details";
+    overlay.querySelector("#modalBody").innerHTML = html || "";
+    overlay.classList.remove("hidden");
+  }
+
+
   function escapeHtml(s) {
     return String(s).replace(/[&<>"']/g, (m) => ({
       "&": "&amp;",

@@ -1,10 +1,34 @@
 /* Linglear Dashboard API helper (no modules; works on GitHub Pages).
-   Exposes: window.apiGet, window.apiPost, window.setBackend, window.getBackend, window.LinglearAPI
-*/
+ *
+ * Exposes:
+ *   - window.LinglearAPI.{getBackend,setBackend,apiGet,apiPost,apiPut,apiDelete}
+ *   - window.apiGet / window.apiPost / ... (legacy aliases)
+ *   - window.LINGLEAR_API_BASE (legacy global used by some older pages)
+ *
+ * Notes (AI-friendly):
+ * - The backend base URL is resolved once from:
+ *     1) localStorage override ("linglear_backend_base")
+ *     2) sensible default derived from window.location.hostname
+ * - Auth tokens are read from localStorage keys written by auth.js.
+ * - All requests include: Authorization: Bearer <token> when a token exists.
+ */
 (function () {
   "use strict";
 
-  var DEFAULT_BACKEND = "https://api.linglear.com";
+  function defaultBackendForHost() {
+    try {
+      var h = String((window.location && window.location.hostname) || "");
+      if (!h) return "https://api.linglear.com";
+      if (h === "localhost" || h === "127.0.0.1") return "http://localhost:3000";
+      // When running on the marketing site domains, use the public API host.
+      if (h === "linglear.com" || h === "www.linglear.com") return "https://api.linglear.com";
+      return "https://api.linglear.com";
+    } catch (e) {
+      return "https://api.linglear.com";
+    }
+  }
+
+  var DEFAULT_BACKEND = defaultBackendForHost();
   var STORAGE_KEY = "linglear_backend_base";
 
   function normalizeBase(url) {
@@ -14,22 +38,11 @@
     // Allow http(s) only
     if (!/^https?:\/\//i.test(url)) return "";
     // strip trailing slash
-    url = url.replace(/\/+$/g, "");
-    return url;
+    return url.replace(/\/+$/, "");
   }
 
-  function getBackend() {
-    try {
-      var saved = localStorage.getItem(STORAGE_KEY);
-      var normalized = normalizeBase(saved);
-      return normalized || DEFAULT_BACKEND;
-    } catch (e) {
-      return DEFAULT_BACKEND;
-    }
-  }
-
-  function setBackend(baseUrl) {
-    var normalized = normalizeBase(baseUrl);
+  function setBackend(url) {
+    var normalized = normalizeBase(url);
     try {
       if (!normalized) {
         localStorage.removeItem(STORAGE_KEY);
@@ -42,13 +55,27 @@
     }
   }
 
+  function getBackend() {
+    try {
+      var saved = localStorage.getItem(STORAGE_KEY);
+      var n = normalizeBase(saved);
+      return n || DEFAULT_BACKEND;
+    } catch (e) {
+      return DEFAULT_BACKEND;
+    }
+  }
+
+  // Pull an auth token from the same keys written by /auth.js.
+  // We prefer access_token (short-lived, for APIs) but allow id_token too.
   function getToken() {
     try {
-      return (
-        localStorage.getItem("linglear_token") ||
-        sessionStorage.getItem("linglear_token") ||
-        ""
-      );
+      // Newer keys used by linglear.com
+      var access = localStorage.getItem("linglear_access_token");
+      var idt = localStorage.getItem("linglear_id_token");
+      var legacyId = localStorage.getItem("ling_auth_id_token");
+      // Older prototype keys (still supported)
+      var old = localStorage.getItem("linglear_token") || sessionStorage.getItem("linglear_token");
+      return access || idt || legacyId || old || "";
     } catch (e) {
       return "";
     }
@@ -62,14 +89,17 @@
   }
 
   async function apiFetch(method, path, body) {
-    var token = getToken();
+    var url = buildUrl(path);
+
     var headers = { "Content-Type": "application/json" };
+    var token = getToken();
     if (token) headers["Authorization"] = "Bearer " + token;
 
-    var res = await fetch(buildUrl(path), {
+    var res = await fetch(url, {
       method: method,
       headers: headers,
       body: body ? JSON.stringify(body) : undefined,
+      // IMPORTANT: keep credentials off for now (we're using bearer tokens).
       credentials: "omit",
     });
 
@@ -82,36 +112,26 @@
     }
 
     if (!res.ok) {
-      var msg =
-        (data && (data.error || data.message)) ||
-        ("HTTP " + res.status + " " + res.statusText);
+      var msg = (data && (data.error || data.message)) || (text || "Request failed");
       var err = new Error(msg);
       err.status = res.status;
       err.data = data;
       throw err;
     }
+
     return data;
   }
 
-  function apiGet(path) {
-    return apiFetch("GET", path);
-  }
+  function apiGet(path) { return apiFetch("GET", path); }
+  function apiPost(path, body) { return apiFetch("POST", path, body); }
+  function apiPut(path, body) { return apiFetch("PUT", path, body); }
+  function apiDelete(path, body) { return apiFetch("DELETE", path, body); }
 
-  function apiPost(path, body) {
-    return apiFetch("POST", path, body);
-  }
-
-  function apiPut(path, body) {
-    return apiFetch("PUT", path, body);
-  }
-
-  function apiDelete(path) {
-    return apiFetch("DELETE", path);
-  }
-
-  // Expose globals expected by existing dashboard code
-  window.getBackend = getBackend;
-  window.setBackend = setBackend;
+  // Legacy global used by some older pages (dashboard.js used to read this).
+  // Keep it always in-sync with the real backend resolver.
+  try {
+    window.LINGLEAR_API_BASE = getBackend();
+  } catch (e) {}
 
   window.apiGet = apiGet;
   window.apiPost = apiPost;
