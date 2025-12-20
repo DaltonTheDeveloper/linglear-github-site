@@ -245,11 +245,12 @@
     DEFAULT_BACKEND: DEFAULT_BACKEND,
     getBackend: getBackend,
     setBackend: setBackend,
+    // Expose token getter so non-module scripts (dashboard.js) can
+    // authenticate SSE (EventSource cannot set Authorization headers).
+    getToken: getToken,
     apiGet: apiGet,
     apiPost: apiPost,
     apiPut: apiPut,
     apiDelete: apiDelete,
-    // Expose token getter so other scripts can authenticate SSE/EventSource.
-    getToken: getToken,
   };
 })();

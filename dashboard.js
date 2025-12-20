@@ -38,6 +38,59 @@
 
   const state = loadState();
 
+  // Expose a stable reference so other parts (polling + SSE) can refresh
+  // the Friends view without relying on function scope.
+  // (Fixes: "refreshFriendsFromApi is not defined".)
+  let refreshFriendsFromApi = async () => {};
+
+  // --- Discord-style live updates (SSE) -------------------------------
+  // Backend: GET /api/events/stream?token=...
+  // EventSource cannot send Authorization headers, so we pass token in query.
+  let sse = null;
+  function stopSSE() {
+    try { if (sse) sse.close(); } catch (e) {}
+    sse = null;
+  }
+
+  function startSSE() {
+    // Only run on HTTPS origins (GitHub Pages) and when API helper is ready.
+    try {
+      if (!window.LinglearAPI || typeof window.LinglearAPI.getBackend !== 'function') return;
+      if (typeof window.LinglearAPI.getToken !== 'function') return;
+
+      const token = window.LinglearAPI.getToken();
+      if (!token) return;
+
+      const base = window.LinglearAPI.getBackend();
+      if (!base) return;
+
+      // Prevent duplicate streams.
+      if (sse) return;
+
+      const url = `${base}/api/events/stream?token=${encodeURIComponent(token)}`;
+      sse = new EventSource(url);
+
+      sse.addEventListener('open', () => {
+        // no toast; keep silent like Discord
+      });
+
+      // Friends updates (requests, accept/decline/cancel, block/unblock)
+      sse.addEventListener('friends:update', async () => {
+        if (state.route === 'friends' && document.visibilityState === 'visible') {
+          try { await refreshFriendsFromApi(); } catch (e) {}
+        }
+      });
+
+      // If the stream errors (network, token expired), drop it.
+      // Token expiration is handled by api.js (forces re-login) on API calls.
+      sse.addEventListener('error', () => {
+        stopSSE();
+      });
+    } catch (e) {
+      stopSSE();
+    }
+  }
+
   // Friends page: polling so incoming requests appear without a full reload.
   // Runs only while the Friends route is active.
   let friendsPollTimer = null;
@@ -51,6 +104,7 @@
     stopFriendsPolling();
     friendsPollTimer = setInterval(() => {
       if (state.route === 'friends' && document.visibilityState === 'visible') {
+        // Fallback only. Live updates use SSE.
         refreshFriendsFromApi();
       }
     }, 4000);
@@ -208,6 +262,8 @@ function normalizeFriendCode(input) {
   };
 
   function setActiveRoute(route) {
+    // Keep current route in state so poll/SSE handlers know what view is active.
+    state.route = route;
     $$(".navitem").forEach(a => a.classList.toggle("active", a.dataset.route === route));
     Object.entries(views).forEach(([k, el]) => el.classList.toggle("active", k === route));
 
@@ -230,6 +286,15 @@ function normalizeFriendCode(input) {
   window.addEventListener("hashchange", () => setActiveRoute(getRoute()));
   if (!window.location.hash) window.location.hash = "#/overview";
   setActiveRoute(getRoute());
+
+  // Start live updates once the dashboard is loaded.
+  // If token is missing/expired, api.js will redirect to /login.html.
+  startSSE();
+
+  // If the tab becomes visible again, restart SSE (tokens can refresh via login).
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') startSSE();
+  });
 
   // Quick actions
   $("#btnAddWatch").addEventListener("click", () => {
@@ -371,7 +436,8 @@ function normalizeFriendCode(input) {
       }
     });
 
-    async function refreshFriendsFromApi() {
+    // Assign implementation to the outer reference so polling/SSE can call it.
+    refreshFriendsFromApi = async function refreshFriendsFromApi() {
       await loadMeFromApi();
       const myCodeEl = document.getElementById("myFriendCode");
       if (myCodeEl) myCodeEl.value = state.friendCode || "";
@@ -452,7 +518,10 @@ function normalizeFriendCode(input) {
                   ${outgoing.map((r) => `
                     <tr>
                       <td><b>${escapeHtml(r.display_name || r.email || "User")}</b></td>
-                      <td style="text-align:right"><span class="badge blue">Pending</span></td>
+                      <td style="text-align:right">
+                        <span class="badge blue">Pending</span>
+                        <button class="btn btn-ghost" data-cancel="${escapeHtml(String(r.request_id))}">Cancel</button>
+                      </td>
                     </tr>
                   `).join("")}
                 </tbody>
@@ -508,6 +577,18 @@ function normalizeFriendCode(input) {
           });
         });
 
+        area.querySelectorAll("[data-cancel]").forEach(btn => {
+          btn.addEventListener("click", async () => {
+            try {
+              await window.LinglearAPI.apiPost("/api/friends/cancel", { request_id: btn.getAttribute("data-cancel") });
+              toast("Cancelled", "Friend request cancelled.", "good");
+              await refreshFriendsFromApi();
+            } catch (e) {
+              toast("Failed", String(e.message || e), "bad");
+            }
+          });
+        });
+
         area.querySelectorAll("[data-block]").forEach(btn => {
           btn.addEventListener("click", async () => {
             try {
@@ -549,7 +630,7 @@ function normalizeFriendCode(input) {
         area.classList.add("muted");
         area.textContent = `API error: ${String(e.message || e)}`;
       }
-    }
+    };
 
     refreshFriendsFromApi();
   }
