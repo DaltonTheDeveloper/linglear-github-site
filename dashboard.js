@@ -38,61 +38,14 @@
 
   const state = loadState();
 
-  // Expose a stable reference so other parts (polling + SSE) can refresh
-  // the Friends view without relying on function scope.
-  // (Fixes: "refreshFriendsFromApi is not defined".)
-  let refreshFriendsFromApi = async () => {};
-
-  // --- Discord-style live updates (SSE) -------------------------------
-  // Backend: GET /api/events/stream?token=...
-  // EventSource cannot send Authorization headers, so we pass token in query.
-  let sse = null;
-  function stopSSE() {
-    try { if (sse) sse.close(); } catch (e) {}
-    sse = null;
-  }
-
-  function startSSE() {
-    // Only run on HTTPS origins (GitHub Pages) and when API helper is ready.
-    try {
-      if (!window.LinglearAPI || typeof window.LinglearAPI.getBackend !== 'function') return;
-      if (typeof window.LinglearAPI.getToken !== 'function') return;
-
-      const token = window.LinglearAPI.getToken();
-      if (!token) return;
-
-      const base = window.LinglearAPI.getBackend();
-      if (!base) return;
-
-      // Prevent duplicate streams.
-      if (sse) return;
-
-      const url = `${base}/api/events/stream?token=${encodeURIComponent(token)}`;
-      sse = new EventSource(url);
-
-      sse.addEventListener('open', () => {
-        // no toast; keep silent like Discord
-      });
-
-      // Friends updates (requests, accept/decline/cancel, block/unblock)
-      sse.addEventListener('friends:update', async () => {
-        if (state.route === 'friends' && document.visibilityState === 'visible') {
-          try { await refreshFriendsFromApi(); } catch (e) {}
-        }
-      });
-
-      // If the stream errors (network, token expired), drop it.
-      // Token expiration is handled by api.js (forces re-login) on API calls.
-      sse.addEventListener('error', () => {
-        stopSSE();
-      });
-    } catch (e) {
-      stopSSE();
-    }
-  }
+  // Friends UI state (Discord-ish: friends list + requests subpage)
+  if (!state.friendsSubpage) state.friendsSubpage = "list"; // 'list' | 'requests'
+  if (!Number.isFinite(state.incomingFriendRequests)) state.incomingFriendRequests = 0;
 
   // Friends page: polling so incoming requests appear without a full reload.
   // Runs only while the Friends route is active.
+  // NOTE: renderFriends() assigns the real implementation.
+  let refreshFriendsFromApi = async () => {};
   let friendsPollTimer = null;
   function stopFriendsPolling() {
     if (friendsPollTimer) {
@@ -104,7 +57,6 @@
     stopFriendsPolling();
     friendsPollTimer = setInterval(() => {
       if (state.route === 'friends' && document.visibilityState === 'visible') {
-        // Fallback only. Live updates use SSE.
         refreshFriendsFromApi();
       }
     }, 4000);
@@ -244,11 +196,50 @@ function normalizeFriendCode(input) {
 
   checkBackend();
 
+  // Keep the friends request notification up-to-date without forcing a reload.
+  // This runs on every page (cheap endpoint) so the sidebar badge behaves like Discord.
+  let friendSummaryTimer = null;
+  async function refreshFriendSummary() {
+    if (!window.LinglearAPI || typeof window.LinglearAPI.apiGet !== "function") return;
+    try {
+      const data = await window.LinglearAPI.apiGet("/api/friends/summary");
+      const n = Number(data && data.incoming_pending);
+      if (Number.isFinite(n)) {
+        state.incomingFriendRequests = n;
+        saveState();
+        refreshNavBadges();
+      }
+    } catch {
+      // ignore (offline or not authed)
+    }
+  }
+  function startFriendSummaryPolling() {
+    if (friendSummaryTimer) clearInterval(friendSummaryTimer);
+    friendSummaryTimer = setInterval(() => {
+      if (document.visibilityState === "visible") refreshFriendSummary();
+    }, 6000);
+    refreshFriendSummary();
+  }
+  startFriendSummaryPolling();
+
   function refreshNavBadges() {
     $("#navStreakTag").textContent = `${state.streakDays}d`;
     $("#navFriendsTag").textContent = String(state.friends.length);
     $("#navCreditsTag").textContent = centsToUsd(state.creditsCents);
     $("#navRankTag").textContent = "#—";
+
+    // Discord-style incoming request badge on the person icon
+    const badge = document.getElementById("navFriendsBadge");
+    if (badge) {
+      const n = Number(state.incomingFriendRequests || 0);
+      if (n > 0) {
+        badge.style.display = "inline-grid";
+        badge.textContent = String(n);
+      } else {
+        badge.style.display = "none";
+        badge.textContent = "0";
+      }
+    }
   }
 
   refreshNavBadges();
@@ -262,8 +253,6 @@ function normalizeFriendCode(input) {
   };
 
   function setActiveRoute(route) {
-    // Keep current route in state so poll/SSE handlers know what view is active.
-    state.route = route;
     $$(".navitem").forEach(a => a.classList.toggle("active", a.dataset.route === route));
     Object.entries(views).forEach(([k, el]) => el.classList.toggle("active", k === route));
 
@@ -286,15 +275,6 @@ function normalizeFriendCode(input) {
   window.addEventListener("hashchange", () => setActiveRoute(getRoute()));
   if (!window.location.hash) window.location.hash = "#/overview";
   setActiveRoute(getRoute());
-
-  // Start live updates once the dashboard is loaded.
-  // If token is missing/expired, api.js will redirect to /login.html.
-  startSSE();
-
-  // If the tab becomes visible again, restart SSE (tokens can refresh via login).
-  document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible') startSSE();
-  });
 
   // Quick actions
   $("#btnAddWatch").addEventListener("click", () => {
@@ -343,6 +323,8 @@ function normalizeFriendCode(input) {
   function renderFriends() {
     const el = views.friends;
 
+    const friendsSub = state.friendsSubpage || "list";
+
     el.innerHTML = `
       <div class="grid">
         <div class="card" style="grid-column: span 12;">
@@ -353,6 +335,15 @@ function normalizeFriendCode(input) {
             </div>
             <span class="badge blue">Friend Codes</span>
             <span class="badge green">${state.friends.length} friends</span>
+          </div>
+
+          <div class="hr"></div>
+          <div class="row" style="gap:8px; flex-wrap:wrap">
+            <button class="btn ${friendsSub === "list" ? "btn-primary" : "btn-ghost"}" id="friendsTabList">Friends</button>
+            <button class="btn ${friendsSub === "requests" ? "btn-primary" : "btn-ghost"}" id="friendsTabRequests">
+              Requests
+              ${Number(state.incomingFriendRequests || 0) > 0 ? `<span class="badge" style="margin-left:8px;background:rgba(255,78,78,.18);border-color:rgba(255,78,78,.35);color:#ffd6d6">${Number(state.incomingFriendRequests || 0)}</span>` : ""}
+            </button>
           </div>
         </div>
 
@@ -383,13 +374,23 @@ function normalizeFriendCode(input) {
         </div>
 
         <div class="card" style="grid-column: span 12;">
-          <h2>Your circle</h2>
-          <div class="muted">Accepted friends + pending requests.</div>
+          <h2>${friendsSub === "requests" ? "Requests" : "Your circle"}</h2>
+          <div class="muted">
+            ${friendsSub === "requests"
+              ? "Incoming requests, pending outgoing requests, and blocked users."
+              : "Your accepted friends."}
+          </div>
           <div class="hr"></div>
           <div id="friendsTableArea" class="muted">Loading…</div>
         </div>
       </div>
     `;
+
+    // Subpage tab buttons
+    const tabList = document.getElementById("friendsTabList");
+    const tabReq = document.getElementById("friendsTabRequests");
+    if (tabList) tabList.addEventListener("click", () => { state.friendsSubpage = "list"; saveState(); renderFriends(); });
+    if (tabReq) tabReq.addEventListener("click", () => { state.friendsSubpage = "requests"; saveState(); renderFriends(); });
 
     $("#btnCopyCode").addEventListener("click", async () => {
       const code = (state.friendCode || "").trim();
@@ -430,14 +431,13 @@ function normalizeFriendCode(input) {
         await window.LinglearAPI.apiPost("/api/friends/request", { code: parsed.code });
         input.value = "";
         toast("Request sent", "Friend request is now pending.", "good");
-        await refreshFriendsFromApi();
+        await _refreshFriendsFromApi();
       } catch (e) {
         toast("Failed", String(e.message || e), "bad");
       }
     });
 
-    // Assign implementation to the outer reference so polling/SSE can call it.
-    refreshFriendsFromApi = async function refreshFriendsFromApi() {
+    async function _refreshFriendsFromApi() {
       await loadMeFromApi();
       const myCodeEl = document.getElementById("myFriendCode");
       if (myCodeEl) myCodeEl.value = state.friendCode || "";
@@ -450,6 +450,9 @@ function normalizeFriendCode(input) {
         const outgoing = Array.isArray(data.outgoing) ? data.outgoing : [];
         const blocked = Array.isArray(data.blocked) ? data.blocked : [];
 
+        // Store incoming count for nav badge + tab badge
+        state.incomingFriendRequests = incoming.length;
+
         state.friends = friends.map(f => ({
           name: f.display_name || f.email || "Friend",
           code: f.code || "",
@@ -461,17 +464,20 @@ function normalizeFriendCode(input) {
         const area = $("#friendsTableArea");
         const sections = [];
 
-        sections.push(`
-          <div style="margin-bottom:14px">
-            <b>Accepted</b>
-            <div class="hr" style="margin:10px 0"></div>
+        const sub = state.friendsSubpage || "list";
+
+        if (sub === "list") {
+          sections.push(`
             ${friends.length ? `
               <table class="table">
                 <thead><tr><th>Friend</th><th></th></tr></thead>
                 <tbody>
                   ${friends.map((f) => `
                     <tr>
-                      <td><b>${escapeHtml(f.display_name || f.email || "Friend")}</b><div class="muted small">${escapeHtml(f.code || "")}</div></td>
+                      <td>
+                        <b>${escapeHtml(f.display_name || f.email || "Friend")}</b>
+                        <div class="muted small">${escapeHtml(f.email || "")}</div>
+                      </td>
                       <td style="text-align:right">
                         <button class="btn btn-ghost" data-unfriend="${escapeHtml(String(f.friend_id || ""))}">Unfriend</button>
                         <button class="btn btn-ghost" data-block="${escapeHtml(String(f.friend_id || ""))}">Block</button>
@@ -481,74 +487,74 @@ function normalizeFriendCode(input) {
                 </tbody>
               </table>
             ` : `<div class="muted">No friends yet. Add one to unlock progress comparisons.</div>`}
-          </div>
-        `);
+          `);
+        } else {
+          sections.push(`
+            <div style="margin-bottom:14px">
+              <b>Incoming</b>
+              <div class="hr" style="margin:10px 0"></div>
+              ${incoming.length ? `
+                <table class="table">
+                  <thead><tr><th>From</th><th></th></tr></thead>
+                  <tbody>
+                    ${incoming.map((r) => `
+                      <tr>
+                        <td><b>${escapeHtml(r.display_name || r.email || "User")}</b><div class="muted small">${escapeHtml(r.email || "")}</div></td>
+                        <td style="text-align:right">
+                          <button class="btn btn-primary" data-accept="${escapeHtml(String(r.request_id))}">Accept</button>
+                          <button class="btn btn-ghost" data-reject="${escapeHtml(String(r.request_id))}">Reject</button>
+                        </td>
+                      </tr>
+                    `).join("")}
+                  </tbody>
+                </table>
+              ` : `<div class="muted">No incoming requests.</div>`}
+            </div>
+          `);
 
-        sections.push(`
-          <div style="margin-bottom:14px">
-            <b>Pending (incoming)</b>
-            <div class="hr" style="margin:10px 0"></div>
-            ${incoming.length ? `
-              <table class="table">
-                <thead><tr><th>From</th><th></th></tr></thead>
-                <tbody>
-                  ${incoming.map((r) => `
-                    <tr>
-                      <td><b>${escapeHtml(r.display_name || r.email || "User")}</b></td>
-                      <td style="text-align:right">
-                        <button class="btn btn-primary" data-accept="${escapeHtml(String(r.request_id))}">Accept</button>
-                        <button class="btn btn-ghost" data-reject="${escapeHtml(String(r.request_id))}">Reject</button>
-                      </td>
-                    </tr>
-                  `).join("")}
-                </tbody>
-              </table>
-            ` : `<div class="muted">No incoming requests.</div>`}
-          </div>
-        `);
+          sections.push(`
+            <div style="margin-bottom:14px">
+              <b>Outgoing</b>
+              <div class="hr" style="margin:10px 0"></div>
+              ${outgoing.length ? `
+                <table class="table">
+                  <thead><tr><th>To</th><th></th></tr></thead>
+                  <tbody>
+                    ${outgoing.map((r) => `
+                      <tr>
+                        <td><b>${escapeHtml(r.display_name || r.email || "User")}</b><div class="muted small">${escapeHtml(r.email || "")}</div></td>
+                        <td style="text-align:right">
+                          <span class="badge blue">Pending</span>
+                          <button class="btn btn-ghost" data-cancel="${escapeHtml(String(r.request_id))}" style="margin-left:8px">Undo</button>
+                        </td>
+                      </tr>
+                    `).join("")}
+                  </tbody>
+                </table>
+              ` : `<div class="muted">No outgoing requests.</div>`}
+            </div>
+          `);
 
-        sections.push(`
-          <div style="margin-bottom:14px">
-            <b>Pending (outgoing)</b>
-            <div class="hr" style="margin:10px 0"></div>
-            ${outgoing.length ? `
-              <table class="table">
-                <thead><tr><th>To</th><th></th></tr></thead>
-                <tbody>
-                  ${outgoing.map((r) => `
-                    <tr>
-                      <td><b>${escapeHtml(r.display_name || r.email || "User")}</b></td>
-                      <td style="text-align:right">
-                        <span class="badge blue">Pending</span>
-                        <button class="btn btn-ghost" data-cancel="${escapeHtml(String(r.request_id))}">Cancel</button>
-                      </td>
-                    </tr>
-                  `).join("")}
-                </tbody>
-              </table>
-            ` : `<div class="muted">No outgoing requests.</div>`}
-          </div>
-        `);
-
-        sections.push(`
-          <div>
-            <b>Blocked</b>
-            <div class="hr" style="margin:10px 0"></div>
-            ${blocked.length ? `
-              <table class="table">
-                <thead><tr><th>User</th><th></th></tr></thead>
-                <tbody>
-                  ${blocked.map((b) => `
-                    <tr>
-                      <td><b>${escapeHtml(b.display_name || b.email || "User")}</b></td>
-                      <td style="text-align:right"><button class="btn btn-ghost" data-unblock="${escapeHtml(String(b.friend_id || ""))}">Unblock</button></td>
-                    </tr>
-                  `).join("")}
-                </tbody>
-              </table>
-            ` : `<div class="muted">No blocked users.</div>`}
-          </div>
-        `);
+          sections.push(`
+            <div>
+              <b>Blocked</b>
+              <div class="hr" style="margin:10px 0"></div>
+              ${blocked.length ? `
+                <table class="table">
+                  <thead><tr><th>User</th><th></th></tr></thead>
+                  <tbody>
+                    ${blocked.map((b) => `
+                      <tr>
+                        <td><b>${escapeHtml(b.display_name || b.email || "User")}</b><div class="muted small">${escapeHtml(b.email || "")}</div></td>
+                        <td style="text-align:right"><button class="btn btn-ghost" data-unblock="${escapeHtml(String(b.friend_id || ""))}">Unblock</button></td>
+                      </tr>
+                    `).join("")}
+                  </tbody>
+                </table>
+              ` : `<div class="muted">No blocked users.</div>`}
+            </div>
+          `);
+        }
 
         area.classList.remove("muted");
         area.innerHTML = sections.join("");
@@ -558,7 +564,7 @@ function normalizeFriendCode(input) {
             try {
               await window.LinglearAPI.apiPost("/api/friends/respond", { request_id: btn.getAttribute("data-accept"), action: "ACCEPT" });
               toast("Accepted", "Friend request accepted.", "good");
-              await refreshFriendsFromApi();
+              await _refreshFriendsFromApi();
             } catch (e) {
               toast("Failed", String(e.message || e), "bad");
             }
@@ -570,7 +576,7 @@ function normalizeFriendCode(input) {
             try {
               await window.LinglearAPI.apiPost("/api/friends/respond", { request_id: btn.getAttribute("data-reject"), action: "REJECT" });
               toast("Rejected", "Friend request rejected.", "good");
-              await refreshFriendsFromApi();
+              await _refreshFriendsFromApi();
             } catch (e) {
               toast("Failed", String(e.message || e), "bad");
             }
@@ -581,8 +587,8 @@ function normalizeFriendCode(input) {
           btn.addEventListener("click", async () => {
             try {
               await window.LinglearAPI.apiPost("/api/friends/cancel", { request_id: btn.getAttribute("data-cancel") });
-              toast("Cancelled", "Friend request cancelled.", "good");
-              await refreshFriendsFromApi();
+              toast("Undone", "Friend request cancelled.", "good");
+              await _refreshFriendsFromApi();
             } catch (e) {
               toast("Failed", String(e.message || e), "bad");
             }
@@ -594,7 +600,7 @@ function normalizeFriendCode(input) {
             try {
               await window.LinglearAPI.apiPost("/api/friends/block", { friend_id: btn.getAttribute("data-block") });
               toast("Blocked", "User blocked.", "good");
-              await refreshFriendsFromApi();
+              await _refreshFriendsFromApi();
             } catch (e) {
               toast("Failed", String(e.message || e), "bad");
             }
@@ -606,7 +612,7 @@ function normalizeFriendCode(input) {
             try {
               await window.LinglearAPI.apiPost("/api/friends/unfriend", { friend_id: btn.getAttribute("data-unfriend") });
               toast("Unfriended", "Friend removed.", "good");
-              await refreshFriendsFromApi();
+              await _refreshFriendsFromApi();
             } catch (e) {
               toast("Failed", String(e.message || e), "bad");
             }
@@ -618,7 +624,7 @@ function normalizeFriendCode(input) {
             try {
               await window.LinglearAPI.apiPost("/api/friends/unblock", { friend_id: btn.getAttribute("data-unblock") });
               toast("Unblocked", "User unblocked.", "good");
-              await refreshFriendsFromApi();
+              await _refreshFriendsFromApi();
             } catch (e) {
               toast("Failed", String(e.message || e), "bad");
             }
@@ -630,9 +636,12 @@ function normalizeFriendCode(input) {
         area.classList.add("muted");
         area.textContent = `API error: ${String(e.message || e)}`;
       }
-    };
+    }
 
-    refreshFriendsFromApi();
+    // Expose for the polling loop and other UI.
+    refreshFriendsFromApi = _refreshFriendsFromApi;
+
+    _refreshFriendsFromApi();
   }
 
   function renderVotes() {
