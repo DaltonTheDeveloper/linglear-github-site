@@ -116,130 +116,316 @@
     const root = $("#pageFriends");
     if (!root) return;
 
+    // Tabs (Friends / Pending / Mutual / Circles)
+    let currentTab = root.getAttribute("data-current-tab") || "friends";
+
+    function setTab(tab) {
+      currentTab = tab;
+      root.setAttribute("data-current-tab", tab);
+      root.querySelectorAll("[data-friends-tab]").forEach((b) => {
+        if (b.getAttribute("data-friends-tab") === tab) b.classList.add("primary");
+        else b.classList.remove("primary");
+      });
+      root.querySelectorAll("[data-friends-pane]").forEach((p) => {
+        p.style.display = p.getAttribute("data-friends-pane") === tab ? "" : "none";
+      });
+
+      // Periodic refresh for pending (requested by Dalton)
+      try {
+        if (root.__pendingInterval) {
+          clearInterval(root.__pendingInterval);
+          root.__pendingInterval = null;
+        }
+        if (tab === "pending") {
+          root.__pendingInterval = setInterval(() => {
+            // Only refresh if we are still on the pending tab
+            if (root.getAttribute("data-current-tab") === "pending") {
+              loadFriends().catch(() => {});
+            }
+          }, 15000);
+        }
+      } catch (_) {}
+    }
+
+    // One-time tab wiring
+    if (!root.__tabsWired) {
+      root.__tabsWired = true;
+      root.querySelectorAll("[data-friends-tab]").forEach((b) => {
+        b.addEventListener("click", () => {
+          const t = b.getAttribute("data-friends-tab");
+          setTab(t);
+          // When opening pending tab, we periodically refresh
+          if (t === "pending") {
+            try { loadFriends(); } catch (_) {}
+          }
+        });
+      });
+    }
+    setTab(currentTab);
+
     const status = $("#statusFriends");
-    status.textContent = "Loading friends…";
+    if (status) status.textContent = "Loading friends…";
 
     try {
       const list = await window.LinglearAPI.apiGet("/api/friends/list");
       const compare = await window.LinglearAPI.apiGet("/api/dashboard/friends");
+      const groups = await window.LinglearAPI.apiGet("/api/groups");
 
-      // list
-      const ul = $("#friendsList");
-      ul.innerHTML = "";
-      (list.friends || []).forEach((f) => {
-        const div = document.createElement("div");
-        div.className = "item";
-        // Determine action buttons based on status
-        let actions = "";
-        if (f.status === "incoming") {
-          actions = `<button class="btn small acceptBtn" data-request="${f.request_id}">Accept</button>
-                     <button class="btn small declineBtn" data-request="${f.request_id}">Decline</button>`;
-        } else if (f.status === "outgoing") {
-          actions = `<span class="badge"><span class="dot"></span>Pending</span>
-                     <button class="btn small cancelBtn" data-request="${f.request_id}">Cancel</button>`;
-        } else if (f.status === "blocked") {
-          actions = `<button class="btn small unblockBtn" data-id="${f.friend_id}">Unblock</button>`;
-        } else {
-          // accepted friendship
-          actions = `<button class="btn small blockBtn" data-id="${f.friend_id}">Block</button>`;
-        }
-        div.innerHTML = `
-          <div class="rank">${escapeHtml((f.display_name || "?")[0])}</div>
-          <div style="flex:1">
-            <div style="font-weight:800">${escapeHtml(f.display_name || "")}</div>
-            <div class="meta">${escapeHtml(f.status || "Friend")}</div>
-          </div>
-          <div class="actions" style="display:flex;gap:4px;">${actions}</div>
-        `;
-        ul.appendChild(div);
-      });
+      // --- counts for tab badges
+      const friendsCount = (list.friends || []).length;
+      const incomingCount = (list.incoming || []).length;
+      const outgoingCount = (list.outgoing || []).length;
+      const blockedCount = (list.blocked || []).length;
+      const cF = $("#tabCountFriends");
+      const cR = $("#tabCountRequests");
+      if (cF) cF.textContent = friendsCount ? `(${friendsCount})` : "";
+      if (cR) cR.textContent = incomingCount ? `(${incomingCount})` : "";
+      const pBadge = $("#pendingBadge");
+      if (pBadge) pBadge.textContent = `${incomingCount} incoming`;
 
-      // compare
+      // --- compare table (always updated)
       const table = $("#compareList");
-      table.innerHTML = "";
-      (compare.rows || []).forEach((r, idx) => {
-        const div = document.createElement("div");
-        div.className = "item";
-        div.innerHTML = `
-          <div class="rank">${idx + 1}</div>
-          <div style="flex:1">
-            <div style="font-weight:850">${escapeHtml(r.display_name)}</div>
-            <div class="meta">Minutes: ${fmt(r.minutes_watched)} • Votes: ${fmt(r.votes_cast)} • Episodes: ${fmt(r.episodes_completed)}</div>
-          </div>
-          <span class="badge"><span class="dot"></span>${escapeHtml(r.badge || "This week")}</span>
-        `;
-        table.appendChild(div);
-      });
+      if (table) {
+        table.innerHTML = "";
+        (compare.rows || []).forEach((r, idx) => {
+          const div = document.createElement("div");
+          div.className = "item";
+          div.innerHTML = `
+            <div class="rank">${idx + 1}</div>
+            <div style="flex:1">
+              <div style="font-weight:850">${escapeHtml(r.display_name)}</div>
+              <div class="meta">Minutes: ${fmt(r.minutes_watched)} • Votes: ${fmt(r.votes_cast)} • Episodes: ${fmt(r.episodes_completed)}</div>
+            </div>
+            <span class="badge"><span class="dot"></span>${escapeHtml(r.badge || "This week")}</span>
+          `;
+          table.appendChild(div);
+        });
+      }
 
-      status.textContent = "Loaded.";
+      // --- Friends pane
+      const ul = $("#friendsList");
+      if (ul) {
+        ul.innerHTML = "";
+        (list.friends || []).forEach((f) => {
+          const div = document.createElement("div");
+          div.className = "item";
+          div.innerHTML = `
+            <div class="rank">${escapeHtml((f.display_name || "?")[0])}</div>
+            <div style="flex:1">
+              <div style="font-weight:800">${escapeHtml(f.display_name || "")}</div>
+              <div class="meta">${escapeHtml(f.email || "")}</div>
+            </div>
+            <div class="actions" style="display:flex;gap:6px; flex-wrap:wrap;">
+              <button class="btn small" data-mutual="${f.friend_id}">Mutual</button>
+              <button class="btn small blockBtn" data-id="${f.friend_id}">Block</button>
+            </div>
+          `;
+          ul.appendChild(div);
+        });
 
-      // Attach event handlers after rendering list
-      ul.querySelectorAll(".acceptBtn").forEach(btn => {
-        btn.addEventListener("click", async (ev) => {
-          const rid = ev.currentTarget.getAttribute("data-request");
-          try {
-            await window.LinglearAPI.apiPost("/api/friends/accept", { request_id: Number(rid) });
-            alert("Friend request accepted.");
-            loadFriends();
-          } catch (err) {
-            alert(err.message);
-          }
+        ul.querySelectorAll("button[data-mutual]").forEach((btn) => {
+          btn.addEventListener("click", () => {
+            const fid = btn.getAttribute("data-mutual");
+            const sel = $("#mutualFriendSelect");
+            if (sel) sel.value = String(fid);
+            setTab("mutual");
+            const loadBtn = $("#loadMutualBtn");
+            if (loadBtn) loadBtn.click();
+          });
         });
-      });
-      ul.querySelectorAll(".declineBtn").forEach(btn => {
-        btn.addEventListener("click", async (ev) => {
-          const rid = ev.currentTarget.getAttribute("data-request");
-          try {
-            await window.LinglearAPI.apiPost("/api/friends/decline", { request_id: Number(rid) });
-            alert("Friend request declined.");
-            loadFriends();
-          } catch (err) {
-            alert(err.message);
-          }
-        });
-      });
-      ul.querySelectorAll(".blockBtn").forEach(btn => {
-        btn.addEventListener("click", async (ev) => {
-          const fid = ev.currentTarget.getAttribute("data-id");
-          if (!confirm("Block this user? They will not be able to interact with you.")) return;
-          try {
-            await window.LinglearAPI.apiPost("/api/friends/block", { friend_id: Number(fid) });
-            alert("User blocked.");
-            loadFriends();
-          } catch (err) {
-            alert(err.message);
-          }
-        });
-      });
-      ul.querySelectorAll(".unblockBtn").forEach(btn => {
-        btn.addEventListener("click", async (ev) => {
-          const fid = ev.currentTarget.getAttribute("data-id");
-          try {
-            await window.LinglearAPI.apiPost("/api/friends/unblock", { friend_id: Number(fid) });
-            alert("User unblocked.");
-            loadFriends();
-          } catch (err) {
-            alert(err.message);
-          }
-        });
-      });
 
-      ul.querySelectorAll(".cancelBtn").forEach(btn => {
-        btn.addEventListener("click", async (ev) => {
-          const rid = ev.currentTarget.getAttribute("data-request");
-          if (!confirm("Cancel this pending friend request?")) return;
-          try {
-            await window.LinglearAPI.apiPost("/api/friends/cancel", { request_id: Number(rid) });
-            alert("Friend request cancelled.");
-            loadFriends();
-          } catch (err) {
-            alert(err.message);
-          }
+        ul.querySelectorAll(".blockBtn").forEach((btn) => {
+          btn.addEventListener("click", async (ev) => {
+            const fid = ev.currentTarget.getAttribute("data-id");
+            if (!confirm("Block this user? They will not be able to interact with you.")) return;
+            try {
+              await window.LinglearAPI.apiPost("/api/friends/block", { friend_id: Number(fid) });
+              alert("User blocked.");
+              loadFriends();
+            } catch (err) {
+              alert(err.message);
+            }
+          });
         });
-      });
+      }
+
+      // --- Pending pane
+      function renderPendingList(containerId, items, mode) {
+        const el = $(containerId);
+        if (!el) return;
+        el.innerHTML = "";
+        (items || []).forEach((r) => {
+          const div = document.createElement("div");
+          div.className = "item";
+          let actions = "";
+          if (mode === "incoming") {
+            actions = `<button class="btn small acceptBtn" data-request="${r.request_id}">Accept</button>
+                       <button class="btn small declineBtn" data-request="${r.request_id}">Decline</button>`;
+          } else if (mode === "outgoing") {
+            actions = `<span class="badge"><span class="dot"></span>Pending</span>
+                       <button class="btn small cancelBtn" data-request="${r.request_id}">Cancel</button>`;
+          } else if (mode === "blocked") {
+            actions = `<button class="btn small unblockBtn" data-id="${r.friend_id}">Unblock</button>`;
+          }
+          div.innerHTML = `
+            <div class="rank">${escapeHtml((r.display_name || "?")[0])}</div>
+            <div style="flex:1">
+              <div style="font-weight:800">${escapeHtml(r.display_name || "")}</div>
+              <div class="meta">${escapeHtml(r.email || "")}</div>
+            </div>
+            <div class="actions" style="display:flex;gap:4px; flex-wrap:wrap;">${actions}</div>
+          `;
+          el.appendChild(div);
+        });
+      }
+      renderPendingList("#incomingList", list.incoming, "incoming");
+      renderPendingList("#outgoingList", list.outgoing, "outgoing");
+      renderPendingList("#blockedList", list.blocked, "blocked");
+      const pendingHint = $("#pendingHint");
+      if (pendingHint) pendingHint.textContent = `Incoming: ${incomingCount} • Outgoing: ${outgoingCount} • Blocked: ${blockedCount}`;
+
+      // Bind pending action handlers
+      const pendingRoot = $("#pageFriends");
+      if (pendingRoot) {
+        pendingRoot.querySelectorAll(".acceptBtn").forEach((btn) => {
+          btn.onclick = async () => {
+            const rid = btn.getAttribute("data-request");
+            try {
+              await window.LinglearAPI.apiPost("/api/friends/accept", { request_id: Number(rid) });
+              loadFriends();
+            } catch (err) { alert(err.message); }
+          };
+        });
+        pendingRoot.querySelectorAll(".declineBtn").forEach((btn) => {
+          btn.onclick = async () => {
+            const rid = btn.getAttribute("data-request");
+            try {
+              await window.LinglearAPI.apiPost("/api/friends/decline", { request_id: Number(rid) });
+              loadFriends();
+            } catch (err) { alert(err.message); }
+          };
+        });
+        pendingRoot.querySelectorAll(".cancelBtn").forEach((btn) => {
+          btn.onclick = async () => {
+            const rid = btn.getAttribute("data-request");
+            if (!confirm("Cancel this pending friend request?")) return;
+            try {
+              await window.LinglearAPI.apiPost("/api/friends/cancel", { request_id: Number(rid) });
+              loadFriends();
+            } catch (err) { alert(err.message); }
+          };
+        });
+        pendingRoot.querySelectorAll(".unblockBtn").forEach((btn) => {
+          btn.onclick = async () => {
+            const fid = btn.getAttribute("data-id");
+            try {
+              await window.LinglearAPI.apiPost("/api/friends/unblock", { friend_id: Number(fid) });
+              loadFriends();
+            } catch (err) { alert(err.message); }
+          };
+        });
+      }
+
+      // --- Mutual pane: friend dropdown options
+      const sel = $("#mutualFriendSelect");
+      if (sel) {
+        const current = sel.value;
+        sel.innerHTML = "";
+        const opt0 = document.createElement("option");
+        opt0.value = "";
+        opt0.textContent = "Select a friend…";
+        sel.appendChild(opt0);
+        (list.friends || []).forEach((f) => {
+          const o = document.createElement("option");
+          o.value = String(f.friend_id);
+          o.textContent = f.display_name || f.email || `User ${f.friend_id}`;
+          sel.appendChild(o);
+        });
+        if (current) sel.value = current;
+      }
+
+      const loadMutualBtn = $("#loadMutualBtn");
+      if (loadMutualBtn && !loadMutualBtn.__wired) {
+        loadMutualBtn.__wired = true;
+        loadMutualBtn.onclick = async () => {
+          const fid = Number((sel && sel.value) || 0);
+          const out = $("#mutualList");
+          const hint = $("#mutualHint");
+          if (!fid) { if (hint) hint.textContent = "Pick a friend first."; return; }
+          if (out) out.innerHTML = "";
+          if (hint) hint.textContent = "Loading mutual shows…";
+          try {
+            const data = await window.LinglearAPI.apiGet(`/api/friends/mutual?friend_id=${fid}`);
+            const arr = data.mutual || [];
+            if (!arr.length) {
+              if (hint) hint.textContent = "No overlap yet (watch history table empty or you two haven't watched the same show).";
+              return;
+            }
+            if (hint) hint.textContent = `Found ${arr.length} mutual show(s).`;
+            arr.forEach((s) => {
+              const div = document.createElement("div");
+              div.className = "item";
+              div.innerHTML = `
+                <div class="rank">🎬</div>
+                <div style="flex:1">
+                  <div style="font-weight:850">${escapeHtml(s.title || "")}</div>
+                  <div class="meta">You: ${escapeHtml(s.my_state || "?")} • Friend: ${escapeHtml(s.friend_state || "?")}</div>
+                </div>
+                <span class="badge"><span class="dot"></span>${escapeHtml(s.language || "")}</span>
+              `;
+              if (out) out.appendChild(div);
+            });
+          } catch (e) {
+            if (hint) hint.textContent = `Could not load: ${e.message}`;
+          }
+        };
+      }
+
+      // --- Circles pane
+      const gList = $("#groupsList");
+      if (gList) {
+        gList.innerHTML = "";
+        (groups.groups || []).forEach((g) => {
+          const div = document.createElement("div");
+          div.className = "item";
+          div.innerHTML = `
+            <div class="rank">👥</div>
+            <div style="flex:1">
+              <div style="font-weight:850">${escapeHtml(g.name || "")}</div>
+              <div class="meta">Role: ${escapeHtml(g.role || "MEMBER")} • Members: ${fmt(g.member_count || 0)}</div>
+            </div>
+            <span class="badge"><span class="dot"></span>Circle</span>
+          `;
+          gList.appendChild(div);
+        });
+        if (!(groups.groups || []).length) {
+          const div = document.createElement("div");
+          div.className = "item";
+          div.innerHTML = `<div style="color:rgba(234,240,255,0.7)">No circles yet. Create one above.</div>`;
+          gList.appendChild(div);
+        }
+      }
+
+      const createGroupBtn = $("#createGroupBtn");
+      if (createGroupBtn && !createGroupBtn.__wired) {
+        createGroupBtn.__wired = true;
+        createGroupBtn.onclick = async () => {
+          const name = ($(`#newGroupName`)?.value || "").trim();
+          if (!name) return alert("Enter a circle name.");
+          try {
+            await window.LinglearAPI.apiPost("/api/groups/create", { name });
+            $(`#newGroupName`).value = "";
+            loadFriends();
+          } catch (e) {
+            alert(e.message);
+          }
+        };
+      }
+
+      if (status) status.textContent = "Loaded.";
 
     } catch (e) {
-      status.textContent = `Could not load: ${e.message}`;
+      if (status) status.textContent = `Could not load: ${e.message}`;
     }
 
     // Attach event handlers for dynamic buttons inside try block
@@ -408,6 +594,18 @@
         // Keep friends page and any friend-related widgets in sync.
         try { await loadFriends(); } catch (_) {}
         try { await loadHome(); } catch (_) {}
+      });
+
+      // Pending request count updates (used for the Friends -> Requests tab)
+      sse.addEventListener("requests:update", (ev) => {
+        try {
+          const data = JSON.parse(ev.data || "{}");
+          const cR = $("#tabCountRequests");
+          const incoming = Number(data.incoming_pending || 0);
+          if (cR) cR.textContent = incoming ? `(${incoming})` : "";
+          const badge = $("#pendingBadge");
+          if (badge) badge.textContent = `${incoming} incoming`;
+        } catch (_) {}
       });
 
       sse.addEventListener("dashboard:update", async () => {
