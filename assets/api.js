@@ -249,5 +249,7 @@
     apiPost: apiPost,
     apiPut: apiPut,
     apiDelete: apiDelete,
+    // Expose token getter so other scripts can authenticate SSE/EventSource.
+    getToken: getToken,
   };
 })();

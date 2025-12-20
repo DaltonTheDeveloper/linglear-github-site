@@ -38,51 +38,22 @@
 
   const state = loadState();
 
-  // Friends page: smart polling so incoming requests appear without a full reload.
-  // Only runs while the Friends route is active AND the tab is visible.
-  // Uses ETag to avoid downloading unchanged payloads, and backs off when idle.
+  // Friends page: polling so incoming requests appear without a full reload.
+  // Runs only while the Friends route is active.
   let friendsPollTimer = null;
-  let friendsPollInFlight = false;
-  let friendsPollBackoffMs = 2000;
-  let friendsPollEtag = "";
-
   function stopFriendsPolling() {
     if (friendsPollTimer) {
-      clearTimeout(friendsPollTimer);
+      clearInterval(friendsPollTimer);
       friendsPollTimer = null;
     }
-    friendsPollInFlight = false;
-    friendsPollBackoffMs = 2000;
   }
-
-  function _scheduleFriendsPoll() {
-    if (friendsPollTimer) clearTimeout(friendsPollTimer);
-    friendsPollTimer = setTimeout(async () => {
-      if (state.route !== "friends" || document.visibilityState !== "visible") {
-        // Keep checking occasionally so it resumes quickly after tab focus.
-        friendsPollBackoffMs = 2000;
-        return _scheduleFriendsPoll();
-      }
-      if (friendsPollInFlight) return _scheduleFriendsPoll();
-
-      friendsPollInFlight = true;
-      try {
-        const changed = await refreshFriendsFromApi({ smart: true });
-        // Backoff when nothing changes; snap back when something changes.
-        if (changed) friendsPollBackoffMs = 2000;
-        else friendsPollBackoffMs = Math.min(20000, Math.floor(friendsPollBackoffMs * 1.6));
-      } catch {
-        friendsPollBackoffMs = Math.min(30000, Math.floor(friendsPollBackoffMs * 1.8));
-      } finally {
-        friendsPollInFlight = false;
-        _scheduleFriendsPoll();
-      }
-    }, friendsPollBackoffMs);
-  }
-
   function startFriendsPolling() {
     stopFriendsPolling();
-    _scheduleFriendsPoll();
+    friendsPollTimer = setInterval(() => {
+      if (state.route === 'friends' && document.visibilityState === 'visible') {
+        refreshFriendsFromApi();
+      }
+    }, 4000);
   }
 
   // DOM helpers
@@ -237,7 +208,6 @@ function normalizeFriendCode(input) {
   };
 
   function setActiveRoute(route) {
-    state.route = route;
     $$(".navitem").forEach(a => a.classList.toggle("active", a.dataset.route === route));
     Object.entries(views).forEach(([k, el]) => el.classList.toggle("active", k === route));
 
@@ -401,114 +371,20 @@ function normalizeFriendCode(input) {
       }
     });
 
-    function getAuthToken() {
-      try {
-        // Mirror logic in assets/api.js (keep in sync for Cognito flows)
-        const t =
-          localStorage.getItem("linglear_access_token") ||
-          localStorage.getItem("linglear_id_token") ||
-          localStorage.getItem("ling_auth_id_token") ||
-          localStorage.getItem("linglear_token") ||
-          sessionStorage.getItem("linglear_access_token") ||
-          sessionStorage.getItem("linglear_id_token") ||
-          sessionStorage.getItem("ling_auth_id_token") ||
-          sessionStorage.getItem("linglear_token") ||
-          "";
-        if (t) return t;
-
-        const packed = localStorage.getItem("linglear_tokens") || "";
-        if (packed) {
-          try {
-            const obj = JSON.parse(packed);
-            return obj.access_token || obj.id_token || "";
-          } catch {}
-        }
-        return "";
-      } catch {
-        return "";
-      }
-    }
-
-    async function fetchFriendsListSmart() {
-      if (!BACKEND_BASE) throw new Error("Backend not set");
-      const token = getAuthToken();
-      const headers = { "Content-Type": "application/json" };
-      if (token) headers["Authorization"] = "Bearer " + token;
-      if (friendsPollEtag) headers["If-None-Match"] = friendsPollEtag;
-
-      const res = await fetch(`${BACKEND_BASE}/api/friends/list`, {
-        method: "GET",
-        headers,
-        credentials: "omit",
-      });
-
-      if (res.status === 304) return { changed: false, data: null };
-
-      const etag = res.headers.get("etag") || "";
-      if (etag) friendsPollEtag = etag;
-
-      const text = await res.text();
-      let data;
-      try {
-        data = text ? JSON.parse(text) : null;
-      } catch {
-        data = null;
-      }
-
-      if (!res.ok) {
-        const msg = (data && (data.error || data.message)) || `HTTP ${res.status}`;
-        throw new Error(msg);
-      }
-
-      return { changed: true, data };
-    }
-
-    async function refreshFriendsFromApi(opts = {}) {
+    async function refreshFriendsFromApi() {
       await loadMeFromApi();
       const myCodeEl = document.getElementById("myFriendCode");
       if (myCodeEl) myCodeEl.value = state.friendCode || "";
 
       try {
-        let data = null;
-        let changed = true;
-        if (opts.smart) {
-          const r = await fetchFriendsListSmart();
-          changed = r.changed;
-          data = r.data;
-          if (!changed) return false;
-        } else {
-          data = await window.LinglearAPI.apiGet("/api/friends/list");
-        }
+        const data = await window.LinglearAPI.apiGet("/api/friends/list");
 
-        // Backend returns explicit arrays. Fall back to the flattened `all` list if needed.
-        const friends = Array.isArray(data && data.friends) ? data.friends : [];
-        const incoming = Array.isArray(data && data.incoming) ? data.incoming : [];
-        const outgoing = Array.isArray(data && data.outgoing) ? data.outgoing : [];
-        const blocked = Array.isArray(data && data.blocked) ? data.blocked : [];
+        const friends = Array.isArray(data.friends) ? data.friends : [];
+        const incoming = Array.isArray(data.incoming) ? data.incoming : [];
+        const outgoing = Array.isArray(data.outgoing) ? data.outgoing : [];
+        const blocked = Array.isArray(data.blocked) ? data.blocked : [];
 
-        // If any older backend returns a single mixed list, split by status.
-        const all = Array.isArray(data && data.all) ? data.all : (Array.isArray(data && data.friends) ? data.friends : []);
-        if ((!incoming.length && !outgoing.length && !blocked.length) && all.length && all[0] && all[0].status) {
-          const mixed = all;
-          const acc = mixed.filter(x => String(x.status).toLowerCase() === "accepted");
-          const inc = mixed.filter(x => String(x.status).toLowerCase() === "incoming");
-          const out = mixed.filter(x => String(x.status).toLowerCase() === "outgoing");
-          const blk = mixed.filter(x => String(x.status).toLowerCase() === "blocked");
-          // Only override if it looks like a full mixed payload.
-          if (acc.length || inc.length || out.length || blk.length) {
-            data.friends = acc;
-            data.incoming = inc;
-            data.outgoing = out;
-            data.blocked = blk;
-          }
-        }
-
-        const finalFriends = Array.isArray(data && data.friends) ? data.friends : friends;
-        const finalIncoming = Array.isArray(data && data.incoming) ? data.incoming : incoming;
-        const finalOutgoing = Array.isArray(data && data.outgoing) ? data.outgoing : outgoing;
-        const finalBlocked = Array.isArray(data && data.blocked) ? data.blocked : blocked;
-
-        state.friends = finalFriends.map(f => ({
+        state.friends = friends.map(f => ({
           name: f.display_name || f.email || "Friend",
           code: f.code || "",
           sinceTs: Date.now()
@@ -523,11 +399,11 @@ function normalizeFriendCode(input) {
           <div style="margin-bottom:14px">
             <b>Accepted</b>
             <div class="hr" style="margin:10px 0"></div>
-            ${finalFriends.length ? `
+            ${friends.length ? `
               <table class="table">
                 <thead><tr><th>Friend</th><th></th></tr></thead>
                 <tbody>
-                  ${finalFriends.map((f) => `
+                  ${friends.map((f) => `
                     <tr>
                       <td><b>${escapeHtml(f.display_name || f.email || "Friend")}</b><div class="muted small">${escapeHtml(f.code || "")}</div></td>
                       <td style="text-align:right">
@@ -546,11 +422,11 @@ function normalizeFriendCode(input) {
           <div style="margin-bottom:14px">
             <b>Pending (incoming)</b>
             <div class="hr" style="margin:10px 0"></div>
-            ${finalIncoming.length ? `
+            ${incoming.length ? `
               <table class="table">
                 <thead><tr><th>From</th><th></th></tr></thead>
                 <tbody>
-                  ${finalIncoming.map((r) => `
+                  ${incoming.map((r) => `
                     <tr>
                       <td><b>${escapeHtml(r.display_name || r.email || "User")}</b></td>
                       <td style="text-align:right">
@@ -569,11 +445,11 @@ function normalizeFriendCode(input) {
           <div style="margin-bottom:14px">
             <b>Pending (outgoing)</b>
             <div class="hr" style="margin:10px 0"></div>
-            ${finalOutgoing.length ? `
+            ${outgoing.length ? `
               <table class="table">
                 <thead><tr><th>To</th><th></th></tr></thead>
                 <tbody>
-                  ${finalOutgoing.map((r) => `
+                  ${outgoing.map((r) => `
                     <tr>
                       <td><b>${escapeHtml(r.display_name || r.email || "User")}</b></td>
                       <td style="text-align:right"><span class="badge blue">Pending</span></td>
@@ -589,11 +465,11 @@ function normalizeFriendCode(input) {
           <div>
             <b>Blocked</b>
             <div class="hr" style="margin:10px 0"></div>
-            ${finalBlocked.length ? `
+            ${blocked.length ? `
               <table class="table">
                 <thead><tr><th>User</th><th></th></tr></thead>
                 <tbody>
-                  ${finalBlocked.map((b) => `
+                  ${blocked.map((b) => `
                     <tr>
                       <td><b>${escapeHtml(b.display_name || b.email || "User")}</b></td>
                       <td style="text-align:right"><button class="btn btn-ghost" data-unblock="${escapeHtml(String(b.friend_id || ""))}">Unblock</button></td>
@@ -668,12 +544,10 @@ function normalizeFriendCode(input) {
           });
         });
 
-        return changed;
       } catch (e) {
         const area = $("#friendsTableArea");
         area.classList.add("muted");
         area.textContent = `API error: ${String(e.message || e)}`;
-        return false;
       }
     }
 

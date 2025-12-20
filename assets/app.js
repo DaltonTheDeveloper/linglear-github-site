@@ -135,7 +135,8 @@
           actions = `<button class="btn small acceptBtn" data-request="${f.request_id}">Accept</button>
                      <button class="btn small declineBtn" data-request="${f.request_id}">Decline</button>`;
         } else if (f.status === "outgoing") {
-          actions = `<span class="badge"><span class="dot"></span>Pending</span>`;
+          actions = `<span class="badge"><span class="dot"></span>Pending</span>
+                     <button class="btn small cancelBtn" data-request="${f.request_id}">Cancel</button>`;
         } else if (f.status === "blocked") {
           actions = `<button class="btn small unblockBtn" data-id="${f.friend_id}">Unblock</button>`;
         } else {
@@ -222,6 +223,21 @@
           }
         });
       });
+
+      ul.querySelectorAll(".cancelBtn").forEach(btn => {
+        btn.addEventListener("click", async (ev) => {
+          const rid = ev.currentTarget.getAttribute("data-request");
+          if (!confirm("Cancel this pending friend request?")) return;
+          try {
+            await window.LinglearAPI.apiPost("/api/friends/cancel", { request_id: Number(rid) });
+            alert("Friend request cancelled.");
+            loadFriends();
+          } catch (err) {
+            alert(err.message);
+          }
+        });
+      });
+
     } catch (e) {
       status.textContent = `Could not load: ${e.message}`;
     }
@@ -368,10 +384,54 @@
     return String(s ?? "").replace(/[&<>"']/g, (m) => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;" }[m]));
   }
 
+  // -----------------------------------------------------------------------
+  // SSE: live updates (Discord-style)
+  // -----------------------------------------------------------------------
+  let sse;
+  function startSSE() {
+    try {
+      const token = window.LinglearAPI?.getToken ? window.LinglearAPI.getToken() : "";
+      if (!token) return;
+      const base = window.LinglearAPI.getBackend();
+      const url = base + "/api/events/stream?token=" + encodeURIComponent(token);
+
+      // Close any existing stream
+      try { sse && sse.close && sse.close(); } catch (_) {}
+
+      sse = new EventSource(url);
+
+      sse.addEventListener("hello", () => {
+        // no-op, but helps confirm connection in DevTools
+      });
+
+      sse.addEventListener("friends:update", async () => {
+        // Keep friends page and any friend-related widgets in sync.
+        try { await loadFriends(); } catch (_) {}
+        try { await loadHome(); } catch (_) {}
+      });
+
+      sse.addEventListener("dashboard:update", async () => {
+        try { await loadHome(); } catch (_) {}
+      });
+
+      sse.addEventListener("notify", (ev) => {
+        try {
+          const data = JSON.parse(ev.data || "{}");
+          if (data && data.message) window.toast ? window.toast(data.message) : alert(data.message);
+        } catch (_) {}
+      });
+
+      sse.onerror = () => {
+        // Browsers auto-retry EventSource. Do not spam alerts.
+      };
+    } catch (_) {}
+  }
+
   document.addEventListener("DOMContentLoaded", async () => {
     setActiveNav();
     requireAuthOrRedirect();
     await loadMe();
+    startSSE();
     await loadHome();
     await loadFriends();
     await loadVote();
