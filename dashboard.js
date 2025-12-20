@@ -38,59 +38,6 @@
 
   const state = loadState();
 
-  // Expose a stable reference so other parts (polling + SSE) can refresh
-  // the Friends view without relying on function scope.
-  // (Fixes: "refreshFriendsFromApi is not defined".)
-  let refreshFriendsFromApi = async () => {};
-
-  // --- Discord-style live updates (SSE) -------------------------------
-  // Backend: GET /api/events/stream?token=...
-  // EventSource cannot send Authorization headers, so we pass token in query.
-  let sse = null;
-  function stopSSE() {
-    try { if (sse) sse.close(); } catch (e) {}
-    sse = null;
-  }
-
-  function startSSE() {
-    // Only run on HTTPS origins (GitHub Pages) and when API helper is ready.
-    try {
-      if (!window.LinglearAPI || typeof window.LinglearAPI.getBackend !== 'function') return;
-      if (typeof window.LinglearAPI.getToken !== 'function') return;
-
-      const token = window.LinglearAPI.getToken();
-      if (!token) return;
-
-      const base = window.LinglearAPI.getBackend();
-      if (!base) return;
-
-      // Prevent duplicate streams.
-      if (sse) return;
-
-      const url = `${base}/api/events/stream?token=${encodeURIComponent(token)}`;
-      sse = new EventSource(url);
-
-      sse.addEventListener('open', () => {
-        // no toast; keep silent like Discord
-      });
-
-      // Friends updates (requests, accept/decline/cancel, block/unblock)
-      sse.addEventListener('friends:update', async () => {
-        if (state.route === 'friends' && document.visibilityState === 'visible') {
-          try { await refreshFriendsFromApi(); } catch (e) {}
-        }
-      });
-
-      // If the stream errors (network, token expired), drop it.
-      // Token expiration is handled by api.js (forces re-login) on API calls.
-      sse.addEventListener('error', () => {
-        stopSSE();
-      });
-    } catch (e) {
-      stopSSE();
-    }
-  }
-
   // Friends page: polling so incoming requests appear without a full reload.
   // Runs only while the Friends route is active.
   let friendsPollTimer = null;
@@ -104,7 +51,6 @@
     stopFriendsPolling();
     friendsPollTimer = setInterval(() => {
       if (state.route === 'friends' && document.visibilityState === 'visible') {
-        // Fallback only. Live updates use SSE.
         refreshFriendsFromApi();
       }
     }, 4000);
@@ -261,9 +207,11 @@ function normalizeFriendCode(input) {
     community: $("#view-community")
   };
 
+  // Friends view refresh function is assigned inside renderFriends() but used by polling/SSE.
+  let refreshFriendsFromApi = async () => {};
+
+
   function setActiveRoute(route) {
-    // Keep current route in state so poll/SSE handlers know what view is active.
-    state.route = route;
     $$(".navitem").forEach(a => a.classList.toggle("active", a.dataset.route === route));
     Object.entries(views).forEach(([k, el]) => el.classList.toggle("active", k === route));
 
@@ -286,15 +234,6 @@ function normalizeFriendCode(input) {
   window.addEventListener("hashchange", () => setActiveRoute(getRoute()));
   if (!window.location.hash) window.location.hash = "#/overview";
   setActiveRoute(getRoute());
-
-  // Start live updates once the dashboard is loaded.
-  // If token is missing/expired, api.js will redirect to /login.html.
-  startSSE();
-
-  // If the tab becomes visible again, restart SSE (tokens can refresh via login).
-  document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible') startSSE();
-  });
 
   // Quick actions
   $("#btnAddWatch").addEventListener("click", () => {
@@ -436,7 +375,6 @@ function normalizeFriendCode(input) {
       }
     });
 
-    // Assign implementation to the outer reference so polling/SSE can call it.
     refreshFriendsFromApi = async function refreshFriendsFromApi() {
       await loadMeFromApi();
       const myCodeEl = document.getElementById("myFriendCode");
@@ -497,7 +435,7 @@ function normalizeFriendCode(input) {
                       <td><b>${escapeHtml(r.display_name || r.email || "User")}</b></td>
                       <td style="text-align:right">
                         <button class="btn btn-primary" data-accept="${escapeHtml(String(r.request_id))}">Accept</button>
-                        <button class="btn btn-ghost" data-reject="${escapeHtml(String(r.request_id))}">Reject</button>
+                        <button class="btn btn-ghost" data-decline="${escapeHtml(String(r.request_id))}">Decline</button>
                       </td>
                     </tr>
                   `).join("")}
@@ -520,7 +458,7 @@ function normalizeFriendCode(input) {
                       <td><b>${escapeHtml(r.display_name || r.email || "User")}</b></td>
                       <td style="text-align:right">
                         <span class="badge blue">Pending</span>
-                        <button class="btn btn-ghost" data-cancel="${escapeHtml(String(r.request_id))}">Cancel</button>
+                        <button class="btn btn-ghost" style="margin-left:8px" data-cancel="${escapeHtml(String(r.request_id))}">Undo</button>
                       </td>
                     </tr>
                   `).join("")}
@@ -553,10 +491,34 @@ function normalizeFriendCode(input) {
         area.classList.remove("muted");
         area.innerHTML = sections.join("");
 
-        area.querySelectorAll("[data-accept]").forEach(btn => {
+        
+        area.querySelectorAll("[data-cancel]").forEach(btn => {
           btn.addEventListener("click", async () => {
             try {
-              await window.LinglearAPI.apiPost("/api/friends/respond", { request_id: btn.getAttribute("data-accept"), action: "ACCEPT" });
+              await window.LinglearAPI.apiPost("/api/friends/cancel", { request_id: btn.getAttribute("data-cancel") });
+              toast("Undone", "Friend request cancelled.", "good");
+              await refreshFriendsFromApi();
+            } catch (e) {
+              toast("Failed", String(e.message || e), "bad");
+            }
+          });
+        });
+
+area.querySelectorAll("[data-accept]").forEach(btn => {
+          btn.addEventListener("click", async () => {
+            try {
+              const requestId = btn.getAttribute("data-accept");
+              try {
+                await window.LinglearAPI.apiPost("/api/friends/respond", { request_id: requestId, action: "accept" });
+              } catch (e1) {
+                // Back-compat: older backend builds expected uppercase actions.
+                const msg = String((e1 && (e1.message || e1)) || "");
+                if (msg.toLowerCase().includes("invalid") || msg.toLowerCase().includes("action")) {
+                  await window.LinglearAPI.apiPost("/api/friends/respond", { request_id: requestId, action: "ACCEPT" });
+                } else {
+                  throw e1;
+                }
+              }
               toast("Accepted", "Friend request accepted.", "good");
               await refreshFriendsFromApi();
             } catch (e) {
@@ -565,23 +527,22 @@ function normalizeFriendCode(input) {
           });
         });
 
-        area.querySelectorAll("[data-reject]").forEach(btn => {
+        area.querySelectorAll("[data-decline]").forEach(btn => {
           btn.addEventListener("click", async () => {
             try {
-              await window.LinglearAPI.apiPost("/api/friends/respond", { request_id: btn.getAttribute("data-reject"), action: "REJECT" });
-              toast("Rejected", "Friend request rejected.", "good");
-              await refreshFriendsFromApi();
-            } catch (e) {
-              toast("Failed", String(e.message || e), "bad");
-            }
-          });
-        });
-
-        area.querySelectorAll("[data-cancel]").forEach(btn => {
-          btn.addEventListener("click", async () => {
-            try {
-              await window.LinglearAPI.apiPost("/api/friends/cancel", { request_id: btn.getAttribute("data-cancel") });
-              toast("Cancelled", "Friend request cancelled.", "good");
+              const requestId = btn.getAttribute("data-decline");
+              try {
+                await window.LinglearAPI.apiPost("/api/friends/respond", { request_id: requestId, action: "decline" });
+              } catch (e1) {
+                // Back-compat: older backend builds expected uppercase actions.
+                const msg = String((e1 && (e1.message || e1)) || "");
+                if (msg.toLowerCase().includes("invalid") || msg.toLowerCase().includes("action")) {
+                  await window.LinglearAPI.apiPost("/api/friends/respond", { request_id: requestId, action: "REJECT" });
+                } else {
+                  throw e1;
+                }
+              }
+              toast("Declined", "Friend request declined.", "good");
               await refreshFriendsFromApi();
             } catch (e) {
               toast("Failed", String(e.message || e), "bad");
@@ -630,7 +591,7 @@ function normalizeFriendCode(input) {
         area.classList.add("muted");
         area.textContent = `API error: ${String(e.message || e)}`;
       }
-    };
+    }
 
     refreshFriendsFromApi();
   }
