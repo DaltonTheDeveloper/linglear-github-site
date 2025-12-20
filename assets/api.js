@@ -240,16 +240,17 @@
   window.apiPost = apiPost;
   window.apiPut = apiPut;
   window.apiDelete = apiDelete;
-  window.getToken = getToken;
 
   window.LinglearAPI = {
     DEFAULT_BACKEND: DEFAULT_BACKEND,
     getBackend: getBackend,
     setBackend: setBackend,
+    // Expose token getter so non-module scripts (dashboard.js) can
+    // authenticate SSE (EventSource cannot set Authorization headers).
+    getToken: getToken,
     apiGet: apiGet,
     apiPost: apiPost,
     apiPut: apiPut,
     apiDelete: apiDelete,
-    getToken: getToken,
   };
 })();
