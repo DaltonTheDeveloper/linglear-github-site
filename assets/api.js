@@ -119,8 +119,17 @@
   // Token discovery is intentionally flexible because different parts of
   // Linglear have historically stored tokens under different keys.
   // We prefer ACCESS token (best for API auth) and fall back to ID token.
-  function getToken() {
+  async function getToken() {
     try {
+      // If the auth layer is present, make sure tokens are fresh (silent refresh).
+      if (window.LinglearAuth && typeof window.LinglearAuth.ensureFreshTokens === "function") {
+        try {
+          await window.LinglearAuth.ensureFreshTokens();
+        } catch (_) {
+          // If silent refresh fails, fall through and let existing logic decide.
+        }
+      }
+
       // Common keys (newer)
       var t =
         localStorage.getItem("linglear_access_token") ||
@@ -134,10 +143,20 @@
         "";
 
       if (t) {
-        // If token is expired, force a clean re-login.
+        // If token is expired, try one last silent refresh; then force re-login.
         if (_isExpiredJwt(t, 30)) {
-          _forceRelogin('Session expired. Please log in again.');
-          return '';
+          if (window.LinglearAuth && typeof window.LinglearAuth.ensureFreshTokens === "function") {
+            try {
+              await window.LinglearAuth.ensureFreshTokens();
+              t = localStorage.getItem("linglear_access_token") || localStorage.getItem("linglear_id_token") || t;
+            } catch (_) {
+              // ignore
+            }
+          }
+          if (_isExpiredJwt(t, 30)) {
+            _forceRelogin("Session expired. Please log in again.");
+            return "";
+          }
         }
         return t;
       }
@@ -165,7 +184,7 @@
   }
 
   async function apiFetch(method, path, body) {
-    var token = getToken();
+    var token = await getToken();
     var headers = { "Content-Type": "application/json" };
     if (token) headers["Authorization"] = "Bearer " + token;
 
